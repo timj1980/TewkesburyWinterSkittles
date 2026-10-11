@@ -221,7 +221,7 @@
 
     async function checkAuth() {
       try {
-        const res = await fetch("AdminNav.html");
+        const res = await fetch("adminnav.html");
         document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
       } catch (err) {
         console.error("Failed to load AdminNav.html:", err);
