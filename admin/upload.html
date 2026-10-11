@@ -1113,7 +1113,7 @@
     if (error) {
       showModal("Upload Failed", "Error: " + error.message);
     } else {
-      const redirectUrl = `MatchViewer.html?team=${encodeURIComponent(teamName)}&date=${encodeURIComponent(date)}`;
+      const redirectUrl = `../teams/scores.html?team=${encodeURIComponent(teamName)}&date=${encodeURIComponent(date)}`;
       showModal("Success!", "Match scorecard uploaded successfully.", redirectUrl);
     }
   });
