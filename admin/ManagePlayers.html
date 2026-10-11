@@ -183,10 +183,10 @@
     async function initPage() {
       // 1. Fetch and inject shared AdminNav
       try {
-        const res = await fetch("AdminNav.html");
+        const res = await fetch("adminNav.html");
         document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
       } catch (err) {
-        console.error("Failed to load AdminNav.html", err);
+        console.error("Failed to load Adminnav.html", err);
       }
 
       // 2. Check Auth Session
