@@ -344,7 +344,7 @@
 
   async function initAdminPage() {
     try {
-      const res = await fetch("AdminNav.html");
+      const res = await fetch("adminnav.html");
       const html = await res.text();
       document.getElementById("admin-nav-placeholder").innerHTML = html;
     } catch (err) {
