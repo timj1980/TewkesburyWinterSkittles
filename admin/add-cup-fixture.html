@@ -234,7 +234,7 @@
     async function checkAdminAuth() {
       // 1. Fetch and inject shared AdminNav
       try {
-        const res = await fetch("AdminNav.html");
+        const res = await fetch("adminnav.html");
         document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
       } catch (err) {
         console.error("Failed to load AdminNav.html:", err);
