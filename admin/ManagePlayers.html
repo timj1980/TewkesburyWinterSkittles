@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Team Players - Admin</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --admin-color: #2563eb;
+      --admin-hover: #1d4ed8;
+      --team-color: #059669;
+      --team-hover: #047857;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #334155;
+      --text-dark: #0f172a;
+      --border-color: #e2e8f0;
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: 24px 16px;
+      max-width: 950px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card { 
+      background: var(--bg-card); 
+      padding: 20px; 
+      border-radius: 10px; 
+      box-shadow: var(--shadow-md); 
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    h2 { font-size: 1.2rem; color: var(--text-dark); margin-bottom: 15px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    input, select {
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      width: 100%;
+    }
+
+    button.action-btn {
+      padding: 10px 16px;
+      background: var(--team-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.action-btn:hover { filter: brightness(0.9); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th { background-color: #f1f5f9; color: var(--text-dark); }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn-danger:hover { background: #b91c1c; }
+
+    #auth-loader {
+      position: fixed;
+      inset: 0;
+      background-color: var(--bg-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="auth-loader">Checking authorization...</div>
+
+  <div class="container" id="admin-content" style="display: none;">
+    <!-- Injected Navigation Banner -->
+    <div id="admin-nav-placeholder"></div>
+
+    <div class="card">
+      <h2>Manage Team Players</h2>
+      
+      <div style="margin-bottom: 20px;">
+        <label for="teamSelect"><strong>Select Team:</strong></label>
+        <select id="teamSelect" style="max-width: 300px; margin-top: 6px;">
+          <option value="">Loading teams...</option>
+        </select>
+      </div>
+
+      <form id="addPlayerForm" class="form-grid">
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" placeholder="e.g. John Smith" required>
+        </div>
+        <div class="form-group">
+          <label for="shortName">Short Name / Initials</label>
+          <input type="text" id="shortName" placeholder="e.g. J. Smith">
+        </div>
+        <button type="submit" class="action-btn">Add Player</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Registered Players Roster</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Short Name</th>
+            <th style="width: 100px; text-align: center;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="playersTableBody">
+          <tr><td colspan="3" style="text-align: center;">Please select a team.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from '../supabase.js';
+
+    let currentUserRole = '';
+    let currentAssignedTeamId = null;
+
+    async function initPage() {
+      // 1. Fetch and inject shared AdminNav
+      try {
+        const res = await fetch("AdminNav.html");
+        document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
+      } catch (err) {
+        console.error("Failed to load AdminNav.html", err);
+      }
+
+      // 2. Check Auth Session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userEmailDisplay = document.getElementById('user-email-display');
+      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+
+      // 3. Fetch User Role and Team
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role, team_name')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (roleData) {
+        currentUserRole = roleData.role;
+      }
+
+      await loadUserPermissions(session.user.id);
+      await loadTeamsDropdown(roleData);
+
+      // 4. Setup Logout button handler from AdminNav
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await supabase.auth.signOut();
+          window.location.href = "login.html";
+        });
+      }
+
+      // 5. Highlight active link in Nav
+      const currentPage = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".nav-bar .nav-link").forEach(link => {
+        const href = link.getAttribute("href").toLowerCase();
+        if (href === currentPage) {
+          link.style.filter = "brightness(1.15)";
+          link.style.outline = "2px solid white";
+        }
+      });
+
+      // 6. Reveal Page Content
+      document.getElementById('auth-loader').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'flex';
+    }
+
+    async function loadUserPermissions(userId) {
+      const userRoleBadge = document.getElementById('user-role-badge');
+      const siteAdminNavBar = document.getElementById('site-admin-nav-bar');
+      const teamAdminNavBar = document.getElementById('team-admin-nav-bar');
+
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (data && data.role === 'admin') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Site Admin';
+            userRoleBadge.style.backgroundColor = '#2563eb';
+          }
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'flex';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+        } else if (data && data.role === 'captain') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Team Captain';
+            userRoleBadge.style.backgroundColor = '#059669';
+          }
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'none';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+        }
+      } catch (err) {
+        console.error('Error loading role permissions:', err);
+      }
+    }
+
+    async function loadTeamsDropdown(roleData) {
+      const teamSelect = document.getElementById('teamSelect');
+      
+      const { data: teams, error } = await supabase
+        .from('Teams')
+        .select('id, "Team Name"')
+        .order('"Team Name"', { ascending: true });
+
+      if (error || !teams) return;
+
+      teamSelect.innerHTML = '<option value="">-- Select Team --</option>';
+
+      teams.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t["Team Name"];
+        teamSelect.appendChild(opt);
+
+        // If user is a captain, find their team ID
+        if (roleData && roleData.role === 'captain' && t["Team Name"].toLowerCase() === roleData.team_name?.toLowerCase()) {
+          currentAssignedTeamId = t.id;
+        }
+      });
+
+      if (currentUserRole === 'captain' && currentAssignedTeamId) {
+        teamSelect.value = currentAssignedTeamId;
+        teamSelect.disabled = true; // Captains can only view/manage their own team
+        fetchPlayers(currentAssignedTeamId);
+      }
+
+      teamSelect.addEventListener('change', (e) => {
+        const selectedTeamId = e.target.value;
+        if (selectedTeamId) {
+          fetchPlayers(selectedTeamId);
+        } else {
+          document.getElementById('playersTableBody').innerHTML = `<tr><td colspan="3" style="text-align: center;">Please select a team.</td></tr>`;
+        }
+      });
+    }
+
+    async function fetchPlayers(teamId) {
+      const tbody = document.getElementById('playersTableBody');
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">Loading players...</td></tr>`;
+
+      const { data: players, error } = await supabase
+        .from('players')
+        .select('id, full_name, short_name')
+        .eq('team_id', teamId)
+        .order('full_name', { ascending: true });
+
+      if (error || !players || players.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">No players registered for this team.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = players.map(p => `
+        <tr>
+          <td>${p.full_name}</td>
+          <td>${p.short_name || '-'}</td>
+          <td style="text-align: center;">
+            <button class="btn-danger" onclick="deletePlayer(${p.id}, ${teamId})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Add Player Form Handler
+    document.getElementById('addPlayerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const teamId = document.getElementById('teamSelect').value;
+      const fullName = document.getElementById('fullName').value.trim();
+      const shortName = document.getElementById('shortName').value.trim();
+
+      if (!teamId) {
+        alert("Please select a team first.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('players')
+        .insert([{ team_id: teamId, full_name: fullName, short_name: shortName }]);
+
+      if (error) {
+        alert("Error adding player: " + error.message);
+      } else {
+        document.getElementById('fullName').value = '';
+        document.getElementById('shortName').value = '';
+        fetchPlayers(teamId);
+      }
+    });
+
+    // Delete player function (made global so inline onclick can find it)
+    window.deletePlayer = async function(playerId, teamId) {
+      if (!confirm("Are you sure you want to remove this player?")) return;
+
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', playerId);
+
+      if (error) {
+        alert("Error deleting player: " + error.message);
+      } else {
+        fetchPlayers(teamId);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initPage);
+  </script>
+</body>
+</html>

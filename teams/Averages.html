@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Averages</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+
+<div class="container">
+  <div id="nav-placeholder"></div>
+
+  <script>
+    fetch("TeamNav.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("nav-placeholder").innerHTML = html;
+        initNav();
+        initChangeTeamButton();
+      });
+
+    function initNav() {
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        const href = link.getAttribute("href").toLowerCase();
+        if (href.includes(page)) link.classList.add("active");
+      });
+    }
+
+    function initChangeTeamButton() {
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    }
+  </script>
+
+<script>
+  fetch("TeamNav.html")
+    .then(r => r.text())
+    .then(html => {
+      // 1. Inject the HTML into the page
+      document.getElementById("nav-placeholder").innerHTML = html;
+
+      // 2. Populate the subtitle text immediately
+      const savedTeam = localStorage.getItem('tmsl_saved_team');
+      const savedDivision = localStorage.getItem('tmsl_saved_division');
+      const subtitleEl = document.getElementById("nav-team-subtitle");
+      if (subtitleEl && savedTeam && savedDivision) {
+        subtitleEl.textContent = `${savedTeam} - ${savedDivision}`;
+      }
+
+      // 3. Highlight the current active tab
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && href.toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+
+      // 4. Attach Change Team button listener
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    });
+</script>
+
+  <header class="top-nav">
+    <div class="brand-title" id="pageTitle">Player Stats</div>
+  </header>
+
+  <section class="section-card">
+    <div class="section-header">
+      <h2 id="section-heading">Player Averages</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th class="center">Games</th>
+            <th class="center">Highest Score</th>
+            <th class="center">Average</th>
+            <th class="center">Spares</th>
+          </tr>
+        </thead>
+        <tbody id="avgTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  import { supabase } from "../supabase.js";
+
+  async function loadAverages() {
+    const teamName = localStorage.getItem('tmsl_saved_team') || "Sharks";
+    const season = "2026/27";
+
+    document.getElementById("pageTitle").textContent = `${teamName} – Player Stats`;
+    document.getElementById("section-heading").textContent = `${teamName} Player Averages`;
+
+    const { data: stats, error } = await supabase.rpc(
+      "tmsl_get_player_stats",
+      { team: teamName, season }
+    );
+
+    const tbody = document.getElementById("avgTableBody");
+    tbody.innerHTML = "";
+
+    if (error || !stats || stats.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No player stats available</td></tr>`;
+      return;
+    }
+
+    stats.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.player_name}</td>
+        <td class="center">${row.games_played}</td>
+        <td class="center">${row.highest_score}</td>
+        <td class="center">${Number(row.average_score).toFixed(2)}</td>
+        <td class="center">${row.spares_count}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  loadAverages();
+</script>
+
+</body>
+</html>

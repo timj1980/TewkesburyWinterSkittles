@@ -1,0 +1,437 @@
+/* 1. Allow container to use more screen real estate on desktop */
+.container {
+  max-width: 1280px; /* Expands container width (default was usually ~960px or 1000px) */
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* 2. Compact table cells specifically for MatchViewer tables */
+#matchTable th, 
+#matchTable td {
+  padding: 4px 2px;       /* Reduces side padding so 20 columns fit easily */
+  font-size: 0.9rem;      /* Slightly tighter font for crisp layout */
+  min-width: 24px;        /* Ensures ball numbers stay centered and uniform */
+}
+
+/* 3. Keep player name columns legible while ball columns compress */
+#matchTable td:first-child,
+#matchTable td:nth-child(11) {
+  min-width: 120px;
+  text-align: left;
+  padding-left: 8px;
+}
+
+/* --- Global system font --- */
+html, body {
+  font-family: system-ui, sans-serif;
+}
+
+/* --- Global table behaviour --- */
+table {
+  width: auto;                 /* auto-size instead of full width */
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+  border: 1px solid #ccc;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+/* --- GitHub-style tab bar --- */
+.gh-tabs {
+  border-bottom: 1px solid #d0d7de;
+  background: #f6f8fa;
+  padding: 0 16px;
+  font-family: system-ui, sans-serif;
+}
+
+input, textarea, select {
+  font-size: 16px;
+}
+
+.gh-tabs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 20px;
+}
+
+.gh-tabs a {
+  display: inline-block;
+  padding: 10px 6px;
+  text-decoration: none;
+  color: #24292f;
+  font-size: 15px;
+  border-bottom: 2px solid transparent;
+}
+
+.gh-tabs a:hover {
+  color: #0969da;
+}
+
+.gh-tabs a.active {
+  border-bottom: 2px solid #0969da;
+  font-weight: 600;
+  color: #0969da;
+}
+
+/* --- Sharks logo in tab bar --- */
+.gh-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gh-logo {
+  height: 128px;
+  width: auto;
+  border-radius: 4px;
+}
+
+.gh-title {
+  font-size: 36px;
+  font-weight: 600;
+  color: #24292f;
+}
+
+/* --- Index page banners --- */
+.banner {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.banner h2 {
+  margin-top: 0;
+  color: #0366d6;
+}
+
+.banner p {
+  font-size: 18px;
+  margin: 8px 0 0;
+}
+
+/* --- League Table --- */
+#leagueTable table {
+  width: auto;                 
+  border-collapse: collapse;
+  margin: 0;                   
+}
+
+#leagueTable th,
+#leagueTable td {
+  padding: 8px;                
+  text-align: left;            
+  font-size: 0.85rem;          
+}
+
+#leagueTable th:nth-child(1),
+#leagueTable td:nth-child(1) {
+  width: 80px;
+}
+
+#leagueTable th:nth-child(2),
+#leagueTable td:nth-child(2) {
+  width: 60px;
+}
+
+#leagueTable th:nth-child(3),
+#leagueTable td:nth-child(3),
+#leagueTable th:nth-child(4),
+#leagueTable td:nth-child(4),
+#leagueTable th:nth-child(5),
+#leagueTable td:nth-child(5),
+#leagueTable th:nth-child(6),
+#leagueTable td:nth-child(6),
+#leagueTable th:nth-child(7),
+#leagueTable td:nth-child(7) {
+  width: 50px;
+}
+
+#division3 table {
+  width: auto;
+  border-collapse: collapse;
+}
+
+#division3 th,
+#division3 td {
+  padding: 8px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+#division3 th:nth-child(1),
+#division3 td:nth-child(1) { width: 140px; }
+
+#division3 th:nth-child(2),
+#division3 td:nth-child(2),
+#division3 th:nth-child(3),
+#division3 td:nth-child(3),
+#division3 th:nth-child(4),
+#division3 td:nth-child(4),
+#division3 th:nth-child(5),
+#division3 td:nth-child(5) {
+  width: 60px;
+}
+
+.highlight-sharks {
+  background-color: #0044aa;
+  color: white;
+  font-weight: bold;
+}
+
+.promotion-row {
+  background-color: #c8f7c5; 
+  font-weight: bold;
+}
+
+.spare_cell {
+  background-color: #c8f7c5; 
+  font-weight: bold;
+}
+
+#division3 table td:nth-child(1),
+#division3 table th:nth-child(1) {
+  width: 40px;
+  text-align: center;
+}
+
+#division3 table td:nth-child(2),
+#division3 table th:nth-child(2) {
+  width: 180px;
+}
+
+/* --- Root variables and layout --- */
+:root {
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #334155;
+  --text-dark: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --badge-bg: #f1f5f9;
+  --winner-bg: #dcfce7;
+  --winner-text: #166534;
+  --highlight-bg: #e0f2fe;
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  padding: 24px 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.top-nav {
+  background: var(--primary);
+  border-radius: 10px;
+  padding: 12px 20px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-title {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn-admin {
+  background-color: #ffffff;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-admin:hover {
+  background-color: #e2e8f0;
+  color: var(--primary-hover);
+}
+
+.controls-card {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controls-card label {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.select-wrapper select {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: #ffffff;
+  color: var(--text-dark);
+  cursor: pointer;
+  outline: none;
+}
+
+.select-wrapper select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+}
+
+.section-card {
+  background: var(--bg-card);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.section-header {
+  background-color: var(--primary);
+  color: #ffffff;
+  padding: 16px 20px;
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background-color: #f1f5f9;
+  color: var(--text-dark);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+th.center, td.center {
+  text-align: center;
+}
+
+td {
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+tbody tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.highlight-row {
+  background-color: var(--highlight-bg) !important;
+  font-weight: 600;
+}
+
+.team-name {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.points-col {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.score-cell {
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: 0.05em;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  background-color: var(--badge-bg);
+  color: var(--text-main);
+}
+
+.badge-winner {
+  background-color: var(--winner-bg);
+  color: var(--winner-text);
+  border: 1px solid #bbf7d0;
+}
+
+.status-msg {
+  padding: 24px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.status-msg.error {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border-radius: 6px;
+  margin: 16px;
+  font-weight: 500;
+}

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Scorecard Upload - Admin</title>
+<style>
+  :root {
+    --primary: #0f172a;
+    --primary-hover: #1e293b;
+    --admin-color: #2563eb;
+    --admin-hover: #1d4ed8;
+    --team-color: #059669;
+    --team-hover: #047857;
+    --bg-body: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #334155;
+    --text-dark: #0f172a;
+    --border-color: #e2e8f0;
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    padding: 24px 16px;
+    max-width: 950px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card { 
+    background: var(--bg-card); 
+    padding: 20px; 
+    border-radius: 10px; 
+    box-shadow: var(--shadow-md); 
+    border: 1px solid var(--border-color);
+  }
+  .step { display: none; }
+  .step.active { display: block; }
+  .banner { 
+    background: #1f2937; 
+    color: white; 
+    padding: 12px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+    text-align: center; 
+  }
+  .banner span { font-weight: bold; margin: 0 10px; }
+  .grid-row { 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+    margin-bottom: 16px; 
+    border-bottom: 1px solid #e1e4e8; 
+    padding-bottom: 12px; 
+  }
+  
+  input[type="number"], input[type="text"], select { 
+    width: 100%; 
+    padding: 10px 8px; 
+    font-size: 16px; 
+    border: 1px solid #ccc; 
+    border-radius: 6px; 
+    box-sizing: border-box; 
+    text-align: center;
+  }
+  
+  input[type="text"] { text-align: left; }
+
+  .balls { 
+    display: grid; 
+    grid-template-columns: repeat(8, 1fr); 
+    gap: 4px; 
+    flex: 1; 
+  }
+
+  .balls input[type="number"] {
+    padding: 8px 0;
+    font-weight: bold;
+    -moz-appearance: textfield;
+  }
+  .balls input[type="number"]::-webkit-outer-spin-button,
+  .balls input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .card-total-input { 
+    display: none; 
+    width: 100%; 
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+  }
+
+  .totals-column { 
+    min-width: 36px; 
+    text-align: center; 
+    font-weight: bold; 
+    font-size: 18px; 
+  }
+
+  .actions { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 20px; 
+    gap: 10px;
+  }
+
+  button.action-btn { 
+    padding: 12px 18px; 
+    font-size: 16px;
+    border: none; 
+    background: #2da44e; 
+    color: white; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    flex: 1;
+  }
+
+  button.secondary { background: #6e7781; }
+  .summary-block { background: #f6f8fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+
+  @media (max-width: 600px) {
+    .card { padding: 10px; }
+    .grid-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      background: #fafafa;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .totals-column {
+      font-size: 20px;
+      padding: 4px 0;
+      color: #0969da;
+    }
+    .balls { gap: 3px; }
+    .balls input[type="number"] {
+      height: 44px;
+      font-size: 18px;
+    }
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal.active { display: flex; }
+  .modal-content {
+    background-color: #fff;
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .modal-content h3 { margin-top: 0; }
+
+  #auth-loader {
+    position: fixed;
+    inset: 0;
+    background-color: var(--bg-body);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+  <!-- AUTH CHECK SCREEN -->
+  <div id="auth-loader">Checking authorization...</div>
+
+  <div class="container" id="admin-content" style="display: none;">
+
+    <!-- INJECTED ADMIN NAVIGATION & HEADER -->
+    <div id="admin-nav-placeholder"></div>
+
+    <!-- MAIN UPLOAD CARD -->
+    <div class="card">
+      <div style="margin-bottom: 20px;">
+        <h2>Match Scorecard Upload — <span id="teamLabel">Select Team</span></h2>
+        
+        <div style="display: none; gap: 10px; margin-bottom: 12px;">
+          <input type="text" id="TeamName" placeholder="Enter Team Name">
+          <button id="loadTeamBtn" type="button">Load Fixtures</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <select id="GameSelect">
+            <option value="">Select Fixture...</option>
+          </select>
+          <input type="text" id="Season" value="2026/27" style="display: none; width: 100px;">
+        </div>
+
+        <div>
+          <label><input type="radio" name="entryMode" value="detailed" checked> Ball-by-Ball</label>
+          <label style="margin-left: 15px;"><input type="radio" name="entryMode" value="summary"> Card Total</label>
+        </div>
+      </div>
+
+      <div class="banner">
+        <span id="handLeadText">Hand level</span> | 
+        <span id="gameLeadText">Game level</span>
+      </div>
+
+      <!-- Dynamic Datalist for Team Roster -->
+      <datalist id="teamPlayerList"></datalist>
+
+      <!-- STEP 1: Front Hand -->
+      <div id="step1" class="step active">
+        <h3>Front Hand</h3>
+        <div id="frontHandRows"></div>
+        <div style="font-weight: bold; text-align: right; margin-top: 10px;">
+          Total Front Hand Score: <span id="FrontHandTotal">0</span>
+        </div>
+        <div id="FrontHandBreakdown" class="summary-block" style="margin-top: 15px;"></div>
+        <div class="actions">
+          <div></div>
+          <button id="next1" class="action-btn" type="button">Next: Middle Hand &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Middle Hand -->
+      <div id="step2" class="step">
+        <h3>Middle Hand</h3>
+        <div id="middleHandRows"></div>
+        <div style="font-weight: bold; text-align: right; margin-top: 10px;">
+          Total Middle Hand Score: <span id="MiddleHandTotal">0</span>
+        </div>
+        <div id="MiddleHandBreakdown" class="summary-block" style="margin-top: 15px;"></div>
+        <div class="actions">
+          <button id="back1" class="action-btn secondary" type="button">&larr; Back to Front Hand</button>
+          <button id="next2" class="action-btn" type="button">Next: Back Hand &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Back Hand -->
+      <div id="step3" class="step">
+        <h3>Back Hand</h3>
+        <div id="backHandRows"></div>
+        <div style="font-weight: bold; text-align: right; margin-top: 10px;">
+          Total Back Hand Score: <span id="BackHandTotal">0</span>
+        </div>
+        <div id="BackHandBreakdown" class="summary-block" style="margin-top: 15px;"></div>
+        <div class="actions">
+          <button id="back2" class="action-btn secondary" type="button">&larr; Back to Middle Hand</button>
+          <button id="submitMatch" class="action-btn" type="button">Review Match Summary</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Review & Submit -->
+      <div id="step4" class="step">
+        <h3>Match Review & Upload</h3>
+        <div id="summaryContent"></div>
+        <div id="handTotals"></div>
+        <div id="teamTotals"></div>
+        <div class="actions">
+          <button id="summaryBack" class="action-btn secondary" type="button">&larr; Edit Scores</button>
+          <button id="summarySubmit" class="action-btn" type="button">Submit Final Scorecard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Pop-up Modal -->
+  <div id="statusModal" class="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Status</h3>
+      <p id="modalMessage"></p>
+      <button id="modalCloseBtn" class="action-btn" type="button" style="width: 100%;">OK</button>
+    </div>
+  </div>
+
+<script>
+  // Dynamically inject player rows into Front, Middle, and Back hand containers with proper class attributes
+  const hands = {
+    frontHandRows: ["FH1", "FH2", "FH3"],
+    middleHandRows: ["MH1", "MH2", "MH3"],
+    backHandRows: ["BH1", "BH2", "BH3", "BH4"]
+  };
+
+  Object.keys(hands).forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    hands[containerId].forEach(p => {
+      let ballsHome = '', ballsAway = '';
+      for (let i = 1; i <= 8; i++) {
+        ballsHome += `<input type="number" id="${p}_HomeBall${i}" min="0" max="9">`;
+        ballsAway += `<input type="number" id="${p}_AwayBall${i}" min="0" max="9">`;
+      }
+
+      container.innerHTML += `
+        <div class="grid-row">
+          <div style="flex: 1;">
+            <input type="text" id="${p}_Home_Player" class="player-input home-player-input" placeholder="Home Player (${p})">
+            <div class="balls" style="margin-top:4px;">${ballsHome}</div>
+            <input type="number" id="${p}_HomeCardTotal" class="card-total-input" placeholder="Home Score">
+          </div>
+          <div class="totals-column" id="${p}_HomeTotal">0</div>
+          <div style="text-align:center; font-weight:bold;">vs</div>
+          <div class="totals-column" id="${p}_AwayTotal">0</div>
+          <div style="flex: 1;">
+            <input type="text" id="${p}_Away_Player" class="player-input away-player-input" placeholder="Away Player (${p})">
+            <div class="balls" style="margin-top:4px;">${ballsAway}</div>
+            <input type="number" id="${p}_AwayCardTotal" class="card-total-input" placeholder="Away Score">
+          </div>
+        </div>
+      `;
+    });
+  });
+</script>
+
+<script type="module">
+  import { supabase } from './supabase.js';
+
+  let allTeamPlayers = [];
+
+  async function initAdminPage() {
+    try {
+      const res = await fetch("AdminNav.html");
+      const html = await res.text();
+      document.getElementById("admin-nav-placeholder").innerHTML = html;
+    } catch (err) {
+      console.error("Failed to load AdminNav.html:", err);
+    }
+
+    const authLoader = document.getElementById('auth-loader');
+    const adminContent = document.getElementById('admin-content');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    const userRoleBadge = document.getElementById('user-role-badge');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    const siteAdminNavBar = document.getElementById('site-admin-nav-bar');
+    const teamAdminNavBar = document.getElementById('team-admin-nav-bar');
+
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+
+    let urlTeam = "";
+    let targetDate = null;
+
+    const searchString = window.location.search;
+    if (searchString) {
+      const urlParams = new URLSearchParams(searchString);
+      let teamParam = urlParams.get('team') || urlParams.get('Team');
+      let dateParam = urlParams.get('date') || urlParams.get('Date');
+
+      if (!teamParam && searchString.length > 1) {
+        const rawParam = searchString.substring(1).split('&')[0];
+        if (!rawParam.includes('=')) {
+          teamParam = decodeURIComponent(rawParam);
+        }
+      }
+
+      if (teamParam) urlTeam = decodeURIComponent(teamParam).trim();
+      if (dateParam) targetDate = dateParam;
+    }
+
+    let assignedTeam = "";
+    let userRole = "user";
+
+    try {
+      const { data, error: roleErr } = await supabase
+        .from('user_roles')
+        .select('role, team_name')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!roleErr && data) {
+        userRole = data.role;
+        assignedTeam = data.team_name || "";
+
+        if (userRole === 'admin') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Site Admin';
+            userRoleBadge.style.backgroundColor = '#2563eb';
+          }
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'flex';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+        } else if (userRole === 'captain') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Team Captain';
+            userRoleBadge.style.backgroundColor = '#059669';
+          }
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'none';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+        } else {
+          if (userRoleBadge) userRoleBadge.textContent = 'User';
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching role:', err);
+    }
+
+    let finalTeamToLoad = "";
+
+    if (userRole === 'admin') {
+      finalTeamToLoad = urlTeam || assignedTeam || 'Sharks';
+    } else if (userRole === 'captain') {
+      if (urlTeam && urlTeam.toLowerCase() !== assignedTeam.toLowerCase()) {
+        alert("Access Denied: You are not authorized to upload scores for other teams.");
+        window.location.href = "admin.html";
+        return;
+      }
+      finalTeamToLoad = assignedTeam;
+    } else {
+      alert("Access Denied: Admin or Captain privileges required.");
+      window.location.href = "login.html";
+      return;
+    }
+
+    if (finalTeamToLoad) {
+      const inputBox = document.getElementById("TeamName");
+      if (inputBox) inputBox.value = finalTeamToLoad;
+
+      const label = document.getElementById("teamLabel");
+      if (label) label.textContent = finalTeamToLoad;
+
+      await handleLoadTeam(targetDate);
+      await loadTeamRoster(finalTeamToLoad);
+    }
+
+    const currentPage = window.location.pathname.split("/").pop().toLowerCase();
+    document.querySelectorAll(".nav-bar .nav-link").forEach(link => {
+      const href = link.getAttribute("href").toLowerCase();
+      if (href === currentPage) {
+        link.style.filter = "brightness(1.15)";
+        link.style.outline = "2px solid white";
+      }
+    });
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.href = "login.html";
+      });
+    }
+
+    if (authLoader) authLoader.style.display = 'none';
+    if (adminContent) adminContent.style.display = 'flex';
+  }
+
+  async function loadTeamRoster(teamName) {
+    try {
+      const { data: teamData, error: teamErr } = await supabase
+        .from('Teams')
+        .select('id')
+        .ilike('"Team Name"', teamName)
+        .maybeSingle();
+
+      if (teamErr || !teamData) return;
+
+      const teamId = teamData.id;
+
+      const { data: players, error: playerErr } = await supabase
+        .from('players')
+        .select('full_name, short_name')
+        .eq('team_id', teamId)
+        .order('full_name', { ascending: true });
+
+      if (playerErr || !players) return;
+
+      allTeamPlayers = players;
+      updatePlayerDatalistOptions();
+    } catch (err) {
+      console.error("Error loading team roster:", err);
+    }
+  }
+
+  function updatePlayerDatalistOptions() {
+    const datalist = document.getElementById('teamPlayerList');
+    if (!datalist) return;
+
+    const sel = document.getElementById("GameSelect");
+    let isHomeMatch = true;
+    if (sel && sel.selectedIndex >= 0) {
+      const homeAwayVal = sel.options[sel.selectedIndex]?.dataset.homeAway || "H";
+      isHomeMatch = homeAwayVal === "H" || homeAwayVal === "Home";
+    }
+
+    const targetClass = isHomeMatch ? '.home-player-input' : '.away-player-input';
+    const allInputs = document.querySelectorAll(targetClass);
+
+    const selectedValues = Array.from(allInputs)
+      .map(input => input.value.trim())
+      .filter(val => val !== "");
+
+    datalist.innerHTML = '';
+
+    allTeamPlayers.forEach(p => {
+      const identifier = p.short_name || p.full_name;
+      if (!selectedValues.includes(identifier)) {
+        const displayName = p.short_name ? `${p.short_name} (${p.full_name})` : p.full_name;
+        const opt = document.createElement('option');
+        opt.value = identifier;
+        opt.label = displayName;
+        datalist.appendChild(opt);
+      }
+    });
+  }
+
+  document.addEventListener('input', (e) => {
+    if (e.target.classList.contains('player-input')) {
+      updatePlayerDatalistOptions();
+    }
+  });
+
+  function updatePlayerInputLists() {
+    const sel = document.getElementById("GameSelect");
+    if (!sel || sel.selectedIndex < 0) return;
+    
+    const selectedOpt = sel.options[sel.selectedIndex];
+    const homeAwayVal = selectedOpt?.dataset.homeAway || "H";
+    const isHomeMatch = homeAwayVal === "H" || homeAwayVal === "Home";
+
+    document.querySelectorAll('.player-input').forEach(input => {
+      input.removeAttribute("list");
+    });
+
+    const targetClass = isHomeMatch ? '.home-player-input' : '.away-player-input';
+    document.querySelectorAll(targetClass).forEach(input => {
+      input.setAttribute("list", "teamPlayerList");
+    });
+
+    updatePlayerDatalistOptions();
+  }
+
+  const prefixes = [
+    "FH1","FH2","FH3",
+    "MH1","MH2","MH3",
+    "BH1","BH2","BH3","BH4"
+  ];
+
+  function getEntryMode() {
+    const checked = document.querySelector('input[name="entryMode"]:checked');
+    return checked ? checked.value : 'detailed';
+  }
+
+  function updateEntryModeUI() {
+    const isSummary = getEntryMode() === 'summary';
+    
+    document.querySelectorAll('.balls').forEach(el => {
+      el.style.display = isSummary ? 'none' : 'grid';
+    });
+    
+    document.querySelectorAll('.card-total-input').forEach(el => {
+      el.style.display = isSummary ? 'block' : 'none';
+    });
+
+    prefixes.forEach(p => updateRowTotal(p));
+  }
+
+  document.querySelectorAll('input[name="entryMode"]').forEach(radio => {
+    radio?.addEventListener('change', updateEntryModeUI);
+  });
+
+  function normaliseDate(str) {
+    if (!str) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+    const match = str.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (match) {
+      let [, dd, mm, yyyy] = match;
+      return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+    }
+    return str;
+  }
+
+  function showStep(n) {
+    document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+    document.getElementById(`step${n}`)?.classList.add("active");
+    updateBreakdown();
+  }
+
+  document.getElementById("next1")?.addEventListener("click", () => showStep(2));
+  document.getElementById("back1")?.addEventListener("click", () => showStep(1));
+  document.getElementById("next2")?.addEventListener("click", () => showStep(3));
+  document.getElementById("back2")?.addEventListener("click", () => showStep(2));
+  document.getElementById("summaryBack")?.addEventListener("click", () => showStep(3));
+
+  function updateRowTotal(prefix) {
+    let home = 0;
+    let away = 0;
+
+    if (getEntryMode() === 'summary') {
+      home = Number(document.getElementById(`${prefix}_HomeCardTotal`)?.value) || 0;
+      away = Number(document.getElementById(`${prefix}_AwayCardTotal`)?.value) || 0;
+    } else {
+      for (let i = 1; i <= 8; i++) {
+        home += Number(document.getElementById(`${prefix}_HomeBall${i}`)?.value) || 0;
+        away += Number(document.getElementById(`${prefix}_AwayBall${i}`)?.value) || 0;
+      }
+    }
+
+    const homeTotalEl = document.getElementById(`${prefix}_HomeTotal`);
+    const awayTotalEl = document.getElementById(`${prefix}_AwayTotal`);
+    if (homeTotalEl) homeTotalEl.textContent = home;
+    if (awayTotalEl) awayTotalEl.textContent = away;
+
+    updateHandTotals();
+    updateBreakdown();
+  }
+
+  function setupTotals(prefix) {
+    for (let i = 1; i <= 8; i++) {
+      document.getElementById(`${prefix}_HomeBall${i}`)?.addEventListener("input", () => updateRowTotal(prefix));
+      document.getElementById(`${prefix}_AwayBall${i}`)?.addEventListener("input", () => updateRowTotal(prefix));
+    }
+    document.getElementById(`${prefix}_HomeCardTotal`)?.addEventListener("input", () => updateRowTotal(prefix));
+    document.getElementById(`${prefix}_AwayCardTotal`)?.addEventListener("input", () => updateRowTotal(prefix));
+  }
+
+  prefixes.forEach(setupTotals);
+
+  function updateHandTotals() {
+    const front = ["FH1","FH2","FH3"];
+    const middle = ["MH1","MH2","MH3"];
+    const back = ["BH1","BH2","BH3","BH4"];
+
+    function sum(prefixesList) {
+      let total = 0;
+      prefixesList.forEach(p => {
+        total += Number(document.getElementById(`${p}_HomeTotal`)?.textContent) || 0;
+        total += Number(document.getElementById(`${p}_AwayTotal`)?.textContent) || 0;
+      });
+      return total;
+    }
+
+    const fh = document.getElementById("FrontHandTotal");
+    const mh = document.getElementById("MiddleHandTotal");
+    const bh = document.getElementById("BackHandTotal");
+
+    if (fh) fh.textContent = sum(front);
+    if (mh) mh.textContent = sum(middle);
+    if (bh) bh.textContent = sum(back);
+  }
+
+  const groups = {
+    Front: ["FH1","FH2","FH3"],
+    Middle: ["MH1","MH2","MH3"],
+    Back: ["BH1","BH2","BH3","BH4"]
+  };
+
+  function handTotals(prefixesList) {
+    let home = 0;
+    let away = 0;
+
+    prefixesList.forEach(p => {
+      home += Number(document.getElementById(`${p}_HomeTotal`)?.textContent) || 0;
+      away += Number(document.getElementById(`${p}_AwayTotal`)?.textContent) || 0;
+    });
+
+    return { home, away };
+  }
+
+  function runningTotals(currentHand) {
+    let FH = handTotals(groups.Front);
+    let MH = handTotals(groups.Middle);
+    let BH = handTotals(groups.Back);
+
+    if (currentHand === "Front") return FH;
+
+    if (currentHand === "Middle") {
+      return {
+        home: FH.home + MH.home,
+        away: FH.away + MH.away
+      };
+    }
+
+    if (currentHand === "Back") {
+      return {
+        home: FH.home + MH.home + BH.home,
+        away: FH.away + MH.away + BH.away
+      };
+    }
+  }
+
+  function isTeamHome() {
+    const sel = document.getElementById("GameSelect");
+    if (!sel || sel.selectedIndex < 0) return true;
+    const selectedOpt = sel.options[sel.selectedIndex];
+    return selectedOpt?.dataset.homeAway !== "Away";
+  }
+
+  function updateBanner(handHome, handAway, gameHome, gameAway) {
+    const teamName = document.getElementById("TeamName")?.value.trim() || "Team";
+    const sel = document.getElementById("GameSelect");
+    const oppositionName = (sel && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]?.dataset.opposition)
+      ? sel.options[sel.selectedIndex].dataset.opposition 
+      : "Opposition";
+
+    const teamIsHome = isTeamHome();
+    const teamHandScore = teamIsHome ? handHome : handAway;
+    const oppHandScore = teamIsHome ? handAway : handHome;
+    const teamGameScore = teamIsHome ? gameHome : gameAway;
+    const oppGameScore = teamIsHome ? gameAway : gameHome;
+
+    const handLead = teamHandScore - oppHandScore;
+    const gameLead = teamGameScore - oppGameScore;
+
+    const handSpan = document.getElementById("handLeadText");
+    const gameSpan = document.getElementById("gameLeadText");
+
+    if (handSpan) {
+      if (handLead > 0) {
+        handSpan.textContent = `${teamName} lead Hand by ${handLead}`;
+        handSpan.style.color = "#4ade80";
+      } else if (handLead < 0) {
+        handSpan.textContent = `${oppositionName} lead Hand by ${Math.abs(handLead)}`;
+        handSpan.style.color = "#f87171";
+      } else {
+        handSpan.textContent = `Hand level`;
+        handSpan.style.color = "white";
+      }
+    }
+
+    if (gameSpan) {
+      if (gameLead > 0) {
+        gameSpan.textContent = `${teamName} lead Game by ${gameLead}`;
+        gameSpan.style.color = "#4ade80";
+      } else if (gameLead < 0) {
+        gameSpan.textContent = `${oppositionName} lead Game by ${Math.abs(gameLead)}`;
+        gameSpan.style.color = "#f87171";
+      } else {
+        gameSpan.textContent = `Game level`;
+        gameSpan.style.color = "white";
+      }
+    }
+  }
+
+  function makeBlock(handName, prefixesList) {
+    let thisHand = handTotals(prefixesList);
+    let running = runningTotals(handName);
+
+    updateBanner(thisHand.home, thisHand.away, running.home, running.away);
+
+    let html = `<strong>${handName} Hand</strong><br><br>`;
+
+    prefixesList.forEach(p => {
+      const hp = document.getElementById(`${p}_Home_Player`)?.value || "";
+      const ap = document.getElementById(`${p}_Away_Player`)?.value || "";
+      const ht = Number(document.getElementById(`${p}_HomeTotal`)?.textContent) || 0;
+      const at = Number(document.getElementById(`${p}_AwayTotal`)?.textContent) || 0;
+
+      html += `${hp}: ${ht}&nbsp;&nbsp;&nbsp;&nbsp;${ap}: ${at}<br>`;
+    });
+
+    html += `
+      <br>
+      Total Hand Home: ${thisHand.home}&nbsp;&nbsp;&nbsp;&nbsp;
+      Total Hand Away: ${thisHand.away}<br><br>
+
+      <strong>Current Game Score</strong><br>
+      Home: ${running.home}&nbsp;&nbsp;&nbsp;&nbsp;Away: ${running.away}
+    `;
+
+    return html;
+  }
+
+  function updateBreakdown() {
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+    const step3 = document.getElementById("step3");
+
+    if (step1 && step1.classList.contains("active")) {
+      const el = document.getElementById("FrontHandBreakdown");
+      if (el) el.innerHTML = makeBlock("Front", groups.Front);
+    }
+
+    if (step2 && step2.classList.contains("active")) {
+      const el = document.getElementById("MiddleHandBreakdown");
+      if (el) el.innerHTML = makeBlock("Middle", groups.Middle);
+    }
+
+    if (step3 && step3.classList.contains("active")) {
+      const el = document.getElementById("BackHandBreakdown");
+      if (el) el.innerHTML = makeBlock("Back", groups.Back);
+    }
+  }
+
+  function buildRow(hand, prefix, date, season) {
+    const isSummary = getEntryMode() === 'summary';
+    const calculatedHomeTotal = Number(document.getElementById(`${prefix}_HomeTotal`)?.textContent) || 0;
+    const calculatedAwayTotal = Number(document.getElementById(`${prefix}_AwayTotal`)?.textContent) || 0;
+
+    const row = {
+      gamedate: date,
+      season: season,
+      hand: hand,
+      home_player: document.getElementById(`${prefix}_Home_Player`)?.value || "",
+      away_player: document.getElementById(`${prefix}_Away_Player`)?.value || "",
+      home_total: calculatedHomeTotal,
+      away_total: calculatedAwayTotal
+    };
+
+    for (let i = 1; i <= 8; i++) {
+      if (isSummary) {
+        row[`homeball${i}`] = null;
+        row[`awayball${i}`] = null;
+      } else {
+        row[`homeball${i}`] = Number(document.getElementById(`${prefix}_HomeBall${i}`)?.value) || 0;
+        row[`awayball${i}`] = Number(document.getElementById(`${prefix}_AwayBall${i}`)?.value) || 0;
+      }
+    }
+
+    return row;
+  }
+
+  function buildSummary() {
+    const groupsSummary = [
+      { hand: "Front", players: ["FH1", "FH2", "FH3"] },
+      { hand: "Middle", players: ["MH1", "MH2", "MH3"] },
+      { hand: "Back", players: ["BH1", "BH2", "BH3", "BH4"] }
+    ];
+
+    let html = "";
+
+    groupsSummary.forEach(group => {
+      html += `<div class="summary-block">
+        <div class="summary-title"><strong>${group.hand} Hand</strong></div><br>`;
+
+      group.players.forEach(prefix => {
+        const homePlayer = document.getElementById(`${prefix}_Home_Player`)?.value || "(Home?)";
+        const awayPlayer = document.getElementById(`${prefix}_Away_Player`)?.value || "(Away?)";
+        const homeTotal = document.getElementById(`${prefix}_HomeTotal`)?.textContent || 0;
+        const awayTotal = document.getElementById(`${prefix}_AwayTotal`)?.textContent || 0;
+
+        html += `
+          <div>${homePlayer}: <strong>${homeTotal}</strong> &nbsp;|&nbsp; ${awayPlayer}: <strong>${awayTotal}</strong></div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    const summaryEl = document.getElementById("summaryContent");
+    if (summaryEl) summaryEl.innerHTML = html;
+  }
+
+  function calculateHandTotals() {
+    const hands = {
+      Front: ["FH1", "FH2", "FH3"],
+      Middle: ["MH1", "MH2", "MH3"],
+      Back: ["BH1", "BH2", "BH3", "BH4"]
+    };
+
+    let html = "";
+    let totalHome = 0;
+    let totalAway = 0;
+
+    Object.keys(hands).forEach(hand => {
+      let handHome = 0;
+      let handAway = 0;
+
+      hands[hand].forEach(prefix => {
+        handHome += Number(document.getElementById(`${prefix}_HomeTotal`)?.textContent) || 0;
+        handAway += Number(document.getElementById(`${prefix}_AwayTotal`)?.textContent) || 0;
+      });
+
+      html += `
+        <div class="summary-block">
+          <strong>${hand} Hand</strong> — Home: ${handHome} | Away: ${handAway}
+        </div>
+      `;
+
+      totalHome += handHome;
+      totalAway += handAway;
+    });
+
+    const handTotalsEl = document.getElementById("handTotals");
+    const teamTotalsEl = document.getElementById("teamTotals");
+
+    if (handTotalsEl) handTotalsEl.innerHTML = html;
+    if (teamTotalsEl) {
+      teamTotalsEl.innerHTML = `
+        <div class="summary-block" style="background: #e2e8f0;">
+          <strong>Total Home Pins:</strong> ${totalHome} &nbsp;|&nbsp; <strong>Total Away Pins:</strong> ${totalAway}
+        </div>
+      `;
+    }
+  }
+
+  document.getElementById("submitMatch")?.addEventListener("click", () => {
+    buildSummary();
+    calculateHandTotals();
+    showStep(4);
+  });
+
+  let fixtures = [];
+  let teamLookup = {};
+
+  function parseFixtureDate(str) {
+    if (!str) return "";
+    if (str.includes(" ")) {
+      const parts = str.split(" ");
+      str = parts[1] || parts[0];
+    }
+    if (str.includes("-")) {
+      const [dd, mm, yyyy] = str.split("-");
+      if (dd && mm && yyyy) return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+    }
+    return str;
+  }
+
+  async function loadTeamLookup() {
+    try {
+      const { data, error } = await supabase.from("Teams").select('id, "Team ID"');
+      if (data) {
+        teamLookup = Object.fromEntries(data.map(t => [String(t["Team ID"]).trim(), t.id]));
+      }
+    } catch (err) {
+      console.error("Failed executing loadTeamLookup:", err);
+    }
+  }
+
+  async function loadFixtures(targetDate = null) {
+    const teamInput = document.getElementById("TeamName");
+    const rawTeam = teamInput ? teamInput.value.trim() : "";
+    if (!rawTeam) return;
+
+    try {
+      const { data: teamMatch } = await supabase
+        .from('Teams')
+        .select('"Team Name"')
+        .ilike('"Team Name"', rawTeam)
+        .maybeSingle();
+
+      const team = teamMatch ? teamMatch["Team Name"] : rawTeam;
+
+      const { data: allData, error: allErr } = await supabase.rpc('tmsl_get_allfixtures', { team });
+      if (allErr) {
+        console.error("Error fetching fixtures via RPC:", allErr);
+        return;
+      }
+
+      fixtures = (allData || []).map(fx => ({
+        raw_date: fx.game_date,
+        iso_date: parseFixtureDate(fx.game_date),
+        home_away: fx.home_away,
+        alley: fx.alley,
+        opposition: fx.opposition,
+        home_team_id: fx.home_team_id,
+        away_team_id: fx.away_team_id,
+        home_team_pk: fx.home_team_pk,
+        away_team_pk: fx.away_team_pk,
+        match_type: fx.match_type
+      }));
+
+      const sel = document.getElementById("GameSelect");
+      if (!sel) return;
+      sel.innerHTML = "";
+
+      if (fixtures.length === 0) {
+        const opt = document.createElement("option");
+        opt.textContent = "No fixtures found";
+        sel.appendChild(opt);
+        return;
+      }
+
+      fixtures.forEach(fx => {
+        let displayDate = fx.iso_date;
+        if (fx.iso_date.includes('-')) {
+          const [yyyy, mm, dd] = fx.iso_date.split('-');
+          displayDate = `${dd}/${mm}/${yyyy}`;
+        }
+        const opt = document.createElement("option");
+        opt.value = fx.iso_date;
+        opt.dataset.opposition = fx.opposition;
+        opt.dataset.homeAway = fx.home_away;
+        opt.textContent = `${displayDate} – ${fx.opposition} (${fx.home_away || 'H'})`;
+        sel.appendChild(opt);
+      });
+
+      let selectedIso = null;
+      if (targetDate) {
+        const cleanTargetDate = normaliseDate(targetDate);
+        const matchingOpt = Array.from(sel.options).find(opt => opt.value === cleanTargetDate);
+        if (matchingOpt) selectedIso = matchingOpt.value;
+      }
+
+      if (!selectedIso) {
+        const todayIso = new Date().toISOString().split('T')[0];
+        const upcoming = fixtures.find(f => f.iso_date >= todayIso);
+        if (upcoming) selectedIso = upcoming.iso_date;
+      }
+
+      if (selectedIso) {
+        sel.value = selectedIso;
+      } else if (sel.options.length > 0) {
+        sel.selectedIndex = 0;
+      }
+
+      updatePlayerInputLists();
+      updateBreakdown();
+    } catch (err) {
+      console.error("Unhandled error in loadFixtures:", err);
+    }
+  }
+
+  async function handleLoadTeam(targetDate = null) {
+    await loadTeamLookup();
+    await loadFixtures(targetDate);
+  }
+
+  document.getElementById("TeamName")?.addEventListener("input", updateBreakdown);
+  document.getElementById("GameSelect")?.addEventListener("change", () => {
+    updatePlayerInputLists();
+    updateBreakdown();
+  });
+
+  function showModal(title, message, redirectUrl = null) {
+    const modal = document.getElementById("statusModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const closeBtn = document.getElementById("modalCloseBtn");
+
+    if (!modal) return;
+
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modal.classList.add("active");
+
+    closeBtn.onclick = () => {
+      modal.classList.remove("active");
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      }
+    };
+
+    if (redirectUrl) {
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 2000);
+    }
+  }
+
+  document.getElementById("summarySubmit")?.addEventListener("click", async () => {
+    const sel = document.getElementById("GameSelect");
+    if (!sel) return;
+
+    const date = sel.value;
+    const season = document.getElementById("Season")?.value || "2026/27";
+    const teamName = document.getElementById("TeamName")?.value || "";
+
+    const selectedFixture = fixtures.find(f => f.iso_date === date);
+
+    if (!selectedFixture) {
+      showModal("Error", "Fixture not found in loaded fixtures.");
+      return;
+    }
+
+    const actualHomePK = selectedFixture.home_team_pk;
+    const actualAwayPK = selectedFixture.away_team_pk;
+
+    const payload = [
+      buildRow("Front", "FH1", date, season),
+      buildRow("Front", "FH2", date, season),
+      buildRow("Front", "FH3", date, season),
+
+      buildRow("Middle", "MH1", date, season),
+      buildRow("Middle", "MH2", date, season),
+      buildRow("Middle", "MH3", date, season),
+
+      buildRow("Back", "BH1", date, season),
+      buildRow("Back", "BH2", date, season),
+      buildRow("Back", "BH3", date, season),
+      buildRow("Back", "BH4", date, season)
+    ].map(row => ({
+      ...row,
+      home_team_pk: actualHomePK,
+      match_type: selectedFixture.match_type,
+      cup_round: selectedFixture.cup_round || null,
+      away_team_pk: actualAwayPK
+    }));
+
+    const { error } = await supabase
+      .from('all_scores')
+      .insert(payload);
+
+    if (error) {
+      showModal("Upload Failed", "Error: " + error.message);
+    } else {
+      const redirectUrl = `MatchViewer.html?team=${encodeURIComponent(teamName)}&date=${encodeURIComponent(date)}`;
+      showModal("Success!", "Match scorecard uploaded successfully.", redirectUrl);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', initAdminPage);
+</script>
+</body>
+</html>

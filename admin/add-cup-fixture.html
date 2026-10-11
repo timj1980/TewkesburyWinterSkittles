@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Cup Fixture - Admin Portal</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --admin-color: #2563eb;
+      --admin-hover: #1d4ed8;
+      --team-color: #059669;
+      --team-hover: #047857;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #334155;
+      --text-dark: #0f172a;
+      --border-color: #e2e8f0;
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+      padding: 28px 24px;
+    }
+
+    .card h1 {
+      font-size: 1.4rem;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .card p {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .form-group input, 
+    .form-group select {
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      outline: none;
+      background-color: #ffffff;
+    }
+
+    .form-group input:focus, 
+    .form-group select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background-color: #2563eb;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-submit:hover { 
+      background-color: #1d4ed8; 
+    }
+
+    .btn-submit:disabled { 
+      opacity: 0.6; 
+      cursor: not-allowed; 
+    }
+
+    .alert-error, 
+    .alert-success {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .alert-error { 
+      background-color: #fef2f2; 
+      color: #b91c1c; 
+      border: 1px solid #fca5a5; 
+    }
+
+    .alert-success { 
+      background-color: #f0fdf4; 
+      color: #15803d; 
+      border: 1px solid #86efac; 
+    }
+
+    #auth-loader {
+      position: fixed;
+      inset: 0;
+      background-color: var(--bg-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH CHECK SCREEN -->
+  <div id="auth-loader">Checking authorization...</div>
+
+  <div class="container" id="admin-content" style="display: none;">
+    <!-- INJECTED ADMIN NAVIGATION & HEADER -->
+    <div id="admin-nav-placeholder"></div>
+
+    <div class="card">
+      <h1>Add Cup Fixture</h1>
+      <p>Schedule a new Cup match for the 2026/27 season.</p>
+
+      <div id="alert-error" class="alert-error"></div>
+      <div id="alert-success" class="alert-success"></div>
+
+      <form id="fixture-form">
+        <div class="form-group">
+          <label for="cup-type">Cup Competition</label>
+          <select id="cup-type" required>
+            <option value="charities_cup">Charities Cup</option>
+            <option value="presidents_cup">Presidents Cup</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="cup-round">Cup Round</label>
+          <input 
+            type="text" 
+            id="cup-round" 
+            list="common-rounds" 
+            placeholder="e.g. Round 1, Quarter Final, Semi Final" 
+            required 
+          />
+          <datalist id="common-rounds">
+            <option value="Preliminary Round"></option>
+            <option value="Round 1"></option>
+            <option value="Round 2"></option>
+            <option value="Round 3"></option>
+            <option value="Quarter Final"></option>
+            <option value="Semi Final"></option>
+            <option value="Final"></option>
+          </datalist>
+        </div>
+
+        <div class="form-group">
+          <label for="week-beginning">Week Beginning Date</label>
+          <input type="date" id="week-beginning" required />
+        </div>
+
+        <div class="form-group">
+          <label for="home-team">Home Team</label>
+          <select id="home-team" required>
+            <option value="" disabled selected>Loading teams...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="away-team">Away Team</label>
+          <select id="away-team" required>
+            <option value="" disabled selected>Loading teams...</option>
+          </select>
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn-submit">Save Cup Fixture</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from "./supabase.js";
+
+    const alertError = document.getElementById('alert-error');
+    const alertSuccess = document.getElementById('alert-success');
+    const fixtureForm = document.getElementById('fixture-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const homeSelect = document.getElementById('home-team');
+    const awaySelect = document.getElementById('away-team');
+
+    async function checkAdminAuth() {
+      // 1. Fetch and inject shared AdminNav
+      try {
+        const res = await fetch("AdminNav.html");
+        document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
+      } catch (err) {
+        console.error("Failed to load AdminNav.html:", err);
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userEmailDisplay = document.getElementById('user-email-display');
+      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+
+      // Verify User Admin Role
+      const { data, error: roleErr } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (roleErr || !data || data.role !== 'admin') {
+        alert('Access Denied: Only General Admins can access this page.');
+        window.location.href = "admin.html";
+        return;
+      }
+
+      // Setup user permissions badge and nav bars via AdminNav logic
+      await loadUserPermissions(session.user.id);
+
+      // Setup Logout button handler
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await supabase.auth.signOut();
+          window.location.href = "login.html";
+        });
+      }
+
+      // Highlight active link
+      const currentPage = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".nav-bar .nav-link").forEach(link => {
+        const href = link.getAttribute("href").toLowerCase();
+        if (href === currentPage) {
+          link.style.filter = "brightness(1.15)";
+          link.style.outline = "2px solid white";
+        }
+      });
+
+      document.getElementById('auth-loader').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'flex';
+
+      await loadTeams();
+    }
+
+    async function loadUserPermissions(userId) {
+      const userRoleBadge = document.getElementById('user-role-badge');
+      const siteAdminNavBar = document.getElementById('site-admin-nav-bar');
+      const teamAdminNavBar = document.getElementById('team-admin-nav-bar');
+
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (data && data.role === 'admin') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Site Admin';
+            userRoleBadge.style.backgroundColor = '#2563eb';
+          }
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'flex';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+        }
+      } catch (err) {
+        console.error('Error loading role permissions:', err);
+      }
+    }
+
+    async function loadTeams() {
+      try {
+        const { data, error } = await supabase
+          .from('Teams')
+          .select('id, "Team Name"')
+          .order('Team Name', { ascending: true });
+
+        if (error) throw error;
+
+        populateDropdown(homeSelect, data, "Select Home Team");
+        populateDropdown(awaySelect, data, "Select Away Team");
+      } catch (err) {
+        alertError.textContent = `Error loading teams list: ${err.message}`;
+        alertError.style.display = 'block';
+      }
+    }
+
+    function populateDropdown(selectElement, teams, placeholder) {
+      selectElement.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+      teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team['Team Name'];
+        selectElement.appendChild(option);
+      });
+    }
+
+    homeSelect.addEventListener('change', () => {
+      if (homeSelect.value === awaySelect.value) awaySelect.value = '';
+    });
+    awaySelect.addEventListener('change', () => {
+      if (homeSelect.value === awaySelect.value) homeSelect.value = '';
+    });
+
+    fixtureForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertError.style.display = 'none';
+      alertSuccess.style.display = 'none';
+
+      const homeId = parseInt(homeSelect.value, 10);
+      const awayId = parseInt(awaySelect.value, 10);
+      const cupRound = document.getElementById('cup-round').value.trim();
+
+      if (homeId === awayId) {
+        alertError.textContent = "Home and Away teams cannot be the same.";
+        alertError.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+
+      const payload = {
+        "Week Beggining": document.getElementById('week-beginning').value,
+        "Home Team ID": homeId,
+        "Away Team ID": awayId,
+        "Season": "2026/27",
+        "match_type": document.getElementById('cup-type').value,
+        "cup_round": cupRound
+      };
+
+      try {
+        const { error } = await supabase
+          .from('Fixtures')
+          .insert([payload]);
+
+        if (error) throw error;
+
+        alertSuccess.textContent = 'Cup fixture successfully created!';
+        alertSuccess.style.display = 'block';
+        
+        homeSelect.value = '';
+        awaySelect.value = '';
+
+      } catch (err) {
+        alertError.textContent = `Failed to insert fixture: ${err.message}`;
+        alertError.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save Cup Fixture';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', checkAdminAuth);
+  </script>
+</body>
+</html>

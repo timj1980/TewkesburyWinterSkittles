@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Tewkesbury Skittles League</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --admin-color: #2563eb;
+      --admin-hover: #1d4ed8;
+      --team-color: #059669;
+      --team-hover: #047857;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #334155;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --danger: #dc2626;
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: 24px 16px;
+      max-width: 950px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Cards & Forms */
+    .card {
+      background: var(--bg-card);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background-color: #f1f5f9;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .card-header h2 {
+      font-size: 1.1rem;
+      color: var(--text-dark);
+    }
+
+    .card-body { padding: 20px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .form-group input, .form-group select {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--primary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 5px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: var(--text-dark);
+    }
+
+    .action-link {
+      color: var(--admin-color);
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .alert-error {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+
+    #auth-loader {
+      position: fixed;
+      inset: 0;
+      background-color: var(--bg-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH CHECK SCREEN -->
+  <div id="auth-loader">Checking authorization...</div>
+
+  <div class="container" id="admin-content" style="display: none;">
+
+    <!-- INJECTED ADMIN NAVIGATION & HEADER -->
+    <div id="admin-nav-placeholder"></div>
+
+    <!-- STATUS MESSAGES -->
+    <div id="form-alert-error" class="alert alert-error"></div>
+
+    <!-- SECTION 1: TEAM PROFILE & ASSIGNMENT -->
+    <section class="card" id="team-profile-section">
+      <div class="card-header">
+        <h2>Your Team Information</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Assigned Team</label>
+            <input type="text" id="team-name" readonly value="Loading..." />
+          </div>
+          <div class="form-group">
+            <label>Division</label>
+            <input type="text" id="team-division" readonly value="Loading..." />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Home Alley</label>
+            <input type="text" id="team-alley" readonly value="Loading..." />
+          </div>
+          <div class="form-group">
+            <label>Home Game Night</label>
+            <input type="text" id="team-gamenight" readonly value="Loading..." />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: MATCHES REQUIRING SCORES (Captains Only) -->
+    <section class="card" id="matches-requiring-scores-section" style="display: none;">
+      <div class="card-header">
+        <h2>Matches Requiring Scores</h2>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+          Past fixtures for your team that are currently missing score submissions.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Home Team</th>
+              <th>Away Team</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="missingScoresBody">
+            <tr><td colspan="4" style="text-align: center;">Loading fixtures...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script type="module">
+    import { supabase } from "./supabase.js";
+
+    const alertError = document.getElementById('form-alert-error');
+
+    async function checkAuth() {
+      try {
+        const res = await fetch("AdminNav.html");
+        document.getElementById("admin-nav-placeholder").innerHTML = await res.text();
+      } catch (err) {
+        console.error("Failed to load AdminNav.html:", err);
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userEmailDisplay = document.getElementById('user-email-display');
+      if (userEmailDisplay) userEmailDisplay.textContent = session.user.email;
+      
+      await loadUserPermissions(session.user.id);
+
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await supabase.auth.signOut();
+          window.location.href = "login.html";
+        });
+      }
+
+      const currentPage = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".nav-bar .nav-link").forEach(link => {
+        const href = link.getAttribute("href").toLowerCase();
+        if (href === currentPage) {
+          link.style.filter = "brightness(1.15)";
+          link.style.outline = "2px solid white";
+        }
+      });
+
+      document.getElementById('auth-loader').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'flex';
+    }
+
+    async function loadUserPermissions(userId) {
+      const userRoleBadge = document.getElementById('user-role-badge');
+      const siteAdminNavBar = document.getElementById('site-admin-nav-bar');
+      const teamAdminNavBar = document.getElementById('team-admin-nav-bar');
+      const teamInput = document.getElementById('team-name');
+      const divisionInput = document.getElementById('team-division');
+      const alleyInput = document.getElementById('team-alley');
+      const gameNightInput = document.getElementById('team-gamenight');
+      const matchesSection = document.getElementById('matches-requiring-scores-section');
+
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role, team_name, division')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error) console.error('Supabase query error:', error);
+
+        if (data && data.role === 'admin') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Site Admin';
+            userRoleBadge.style.backgroundColor = '#2563eb';
+          }
+          if (teamInput) {
+            teamInput.value = 'General Admin (All Teams)';
+            teamInput.readOnly = false;
+          }
+          if (divisionInput) divisionInput.value = 'All Divisions';
+          if (alleyInput) alleyInput.value = 'N/A';
+          if (gameNightInput) gameNightInput.value = 'N/A';
+
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'flex';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+          
+          // Hide section for general admins as requested ("This only needs to show for Captains")
+          if (matchesSection) matchesSection.style.display = 'none';
+
+        } else if (data && data.role === 'captain') {
+          if (userRoleBadge) {
+            userRoleBadge.textContent = 'Team Captain';
+            userRoleBadge.style.backgroundColor = '#059669';
+          }
+          const teamName = data.team_name || 'Unassigned';
+          if (teamInput) teamInput.value = teamName;
+          if (divisionInput) divisionInput.value = data.division || 'Division 3';
+
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'none';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'flex';
+          if (matchesSection) matchesSection.style.display = 'block';
+
+          // Fetch team metadata (Alley and Game Night) and missing scores
+          await loadTeamMetadata(teamName);
+          await loadMissingScoresForCaptain(teamName);
+
+        } else {
+          if (userRoleBadge) userRoleBadge.textContent = 'User';
+          if (teamInput) teamInput.value = 'Unassigned';
+          if (divisionInput) divisionInput.value = 'N/A';
+          if (alleyInput) alleyInput.value = 'N/A';
+          if (gameNightInput) gameNightInput.value = 'N/A';
+
+          if (siteAdminNavBar) siteAdminNavBar.style.display = 'none';
+          if (teamAdminNavBar) teamAdminNavBar.style.display = 'none';
+          if (matchesSection) matchesSection.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error fetching role:', err);
+      }
+    }
+
+    async function loadTeamMetadata(teamName) {
+      try {
+        const { data, error } = await supabase
+          .from('Teams')
+          .select('"Home Alley", "Home Night"')
+          .ilike('"Team Name"', teamName)
+          .maybeSingle();
+
+        if (data) {
+          document.getElementById('team-alley').value = data["Home Alley"] || 'Not Set';
+          document.getElementById('team-gamenight').value = data["Home Night"] || 'Not Set';
+        }
+      } catch (err) {
+        console.error("Error loading team metadata:", err);
+      }
+    }
+
+    function normaliseDate(str) {
+      if (!str) return "";
+      const match = str.match(/\d{1,2}-\d{1,2}-\d{4}/);
+      if (!match) return str;
+      let [dd, mm, yyyy] = match[0].split("-");
+      if (dd.length === 1) dd = "0" + dd;
+      if (mm.length === 1) mm = "0" + mm;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function loadMissingScoresForCaptain(teamName) {
+      const tbody = document.getElementById('missingScoresBody');
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Checking fixtures...</td></tr>`;
+
+      try {
+        const { data: fixtures, error } = await supabase.rpc("tmsl_get_allfixtures", {
+          team: teamName
+        });
+
+        if (error || !fixtures) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No past fixtures found.</td></tr>`;
+          return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const missingFixtures = [];
+
+        for (const fx of fixtures) {
+          const isoDate = normaliseDate(fx.game_date);
+          const matchDate = new Date(isoDate);
+
+          if (matchDate <= today) {
+            const { data: scores } = await supabase.rpc("tmsl_get_match_scores_with_summary", {
+              team_namein: teamName,
+              game_date: isoDate
+            });
+
+            if (!scores || scores.length === 0) {
+              const isHome = fx.home_away === 'H' || fx.home_away === 'Home';
+              missingFixtures.push({
+                gameDate: fx.game_date,
+                isoDate: isoDate,
+                homeTeam: isHome ? teamName : fx.opposition,
+                awayTeam: isHome ? fx.opposition : teamName,
+                team: teamName
+              });
+            }
+          }
+        }
+
+        if (missingFixtures.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">All past matches have score submissions! Excellent work.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = missingFixtures.map(fx => `
+          <tr>
+            <td>${fx.gameDate}</td>
+            <td><strong>${fx.homeTeam}</strong></td>
+            <td><strong>${fx.awayTeam}</strong></td>
+            <td>
+              <a href="upload.html?team=${encodeURIComponent(fx.team)}&date=${encodeURIComponent(fx.isoDate)}" class="action-link">Add Scores ↗</a>
+            </td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error("Error loading missing scores:", err);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger);">Failed to load missing scores.</td></tr>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkAuth);
+  </script>
+</body>
+</html>

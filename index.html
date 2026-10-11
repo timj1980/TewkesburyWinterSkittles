@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tewkesbury & District Skittles League.</title>
+  <link rel="stylesheet" href="style.css" />
+ 
+</head>
+<body>
+
+  <div class="container">
+
+<div id="nav-placeholder"></div>
+
+<script>
+  fetch("LeagueNav.html")
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById("nav-placeholder").innerHTML = html;
+      initNav();
+    });
+
+  function initNav() {
+    const page = window.location.pathname.split("/").pop().toLowerCase();
+    document.querySelectorAll(".gh-tabs a").forEach(link => {
+      if (link.getAttribute("href").toLowerCase().includes(page)) {
+        link.classList.add("active");
+      }
+    });
+  }
+</script>
+
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav">
+      <div class="brand-title">League Portal</div>
+     <!--  <a href="/admin/login.html" class="btn-admin">Team Admin</a> -->
+    </header>
+
+    <!-- DIVISION SELECTOR CONTROL -->
+    <div class="controls-card">
+      <label for="division-select">Select Division:</label>
+      <div class="select-wrapper">
+        <select id="division-select">
+          <option value="Premier">Premier Division</option>
+          <option value="Division 1">Division 1</option>
+          <option value="Division 2">Division 2</option>
+          <option value="Division 3">Division 3</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SECTION 1: LEAGUE TABLE -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 id="standings-title">League Table</h2>
+      </div>
+      <div id="standings-status" class="status-msg">Loading league table...</div>
+      <div class="table-wrapper">
+        <table id="standings-table" style="display: none;">
+          <thead>
+            <tr>
+              <th class="center">Pos</th>
+              <th>Team</th>
+              <th class="center">Games</th>
+              <th class="center">Won</th>
+              <th class="center">Drawn</th>
+              <th class="center">Set 1</th>
+              <th class="center">Set 2</th>
+              <th class="center">Set 3</th>
+              <th class="center">Set D</th>
+              <th class="center">Points</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 2: UPCOMING FIXTURES -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 id="fixtures-title">This Week's Fixtures</h2>
+      </div>
+      <div id="fixtures-status" class="status-msg">Loading upcoming fixtures...</div>
+      <div class="table-wrapper">
+        <table id="fixtures-table" style="display: none;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Home Team</th>
+              <th>Away Team</th>
+              <th>Venue</th>
+            </tr>
+          </thead>
+          <tbody id="fixtures-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 3: LATEST RESULTS -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2 id="results-title">Recent Results</h2>
+      </div>
+      <div id="results-status" class="status-msg">Loading recent results...</div>
+      <div class="table-wrapper">
+        <table id="results-table" style="display: none;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Home Team</th>
+              <th>Away Team</th>
+              <th>Score (Pins)</th>
+              <th>Front Set</th>
+              <th>Middle Set</th>
+              <th>Back Set</th>
+              <th>Match Winner</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+ <script type="module">
+    import { supabase } from "./supabase.js";
+
+    const divisionSelect = document.getElementById('division-select');
+
+    // 1. Restore saved division from localStorage on page load
+    const savedDivision = localStorage.getItem('selectedDivisionValue');
+    if (savedDivision) {
+      divisionSelect.value = savedDivision;
+    }
+
+    const divisionTeamsMap = {
+      "Premier": [
+        "The Champions", "Cleeve Hillbillies", "Wye Emms", "Forthampton C C",
+        "Gunners", "Railwaymen", "Rollers", "Cosmos", "L & H Eng", "Strikers", "Swifts"
+      ],
+      "Division 1": ["Scuttlers", "Cygnets","WMK Elite","Cygnets","Poachers","Shunters","Acorns","Merretts","Wanderers","Cleeve AFC","Drunkeys","Black Bear"],
+      "Division 2": [
+        "Anvils", "Alderton Allsorts", "Greyhound", "Ashton C C", "Villagers",
+        "Wigwood Pirates", "Ice Bears", "Hermits", "Unreliables", "Village Inn", "Beavers"
+      ],
+      "Division 3": [
+        "Turncoats", "Dumbleton C C", "Magpies", "Beechmen", "Monks",
+        "Yokels", "Missorts", "Sharks", "Beckford S C","Playboys","Misfits"
+      ]
+    };
+
+    // 1. Dynamic DOM Parser for League Standings
+    async function loadStandings(divisionName) {
+      const statusEl = document.getElementById('standings-status');
+      const tableEl = document.getElementById('standings-table');
+      const tbodyEl = document.getElementById('standings-body');
+
+      statusEl.style.display = 'block';
+      statusEl.className = 'status-msg';
+      statusEl.textContent = 'Loading league table...';
+      tableEl.style.display = 'none';
+
+      try {
+        const html = await fetch("tmsl-2021-2022.html").then(r => r.text());
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const standingsTable = [...doc.querySelectorAll("table")].find(
+          table => [...table.querySelectorAll("tr")].some(tr => tr.querySelectorAll("td").length >= 10)
+        );
+
+        if (!standingsTable) {
+          statusEl.textContent = `League table data source not found.`;
+          return;
+        }
+
+        const rows = [...standingsTable.querySelectorAll("tr")].filter(
+          tr => tr.querySelectorAll("td").length >= 10
+        );
+
+        const normalise = str => str.replace(/\s+/g, " ").trim();
+        const allowedTeams = divisionTeamsMap[divisionName] || [];
+        const standings = [];
+        const seenTeams = new Set();
+
+        for (const tr of rows) {
+          const cells = [...tr.querySelectorAll("td")].map(td => normalise(td.textContent));
+
+          // Check Left-Hand Side Table
+          const leftTeam = cells[0];
+          if (allowedTeams.includes(leftTeam) && !seenTeams.has(leftTeam)) {
+            seenTeams.add(leftTeam);
+            standings.push({
+              team: leftTeam,
+              games: cells[1] || "-",
+              won: cells[2] || "-",
+              drawn: cells[3] || "-",
+              set1: cells[4] || "-",
+              set2: cells[5] || "-",
+              set3: cells[6] || "-",
+              setD: cells[7] || "-",
+              points: cells[8] || "-"
+            });
+          }
+
+          // Check Right-Hand Side Table
+          const rightTeamIdx = cells.findIndex((c, i) => i >= 8 && allowedTeams.includes(c));
+          if (rightTeamIdx !== -1) {
+            const rightTeam = cells[rightTeamIdx];
+            if (!seenTeams.has(rightTeam)) {
+              seenTeams.add(rightTeam);
+              standings.push({
+                team: rightTeam,
+                games: cells[rightTeamIdx + 1] || "-",
+                won: cells[rightTeamIdx + 2] || "-",
+                drawn: cells[rightTeamIdx + 3] || "-",
+                set1: cells[rightTeamIdx + 4] || "-",
+                set2: cells[rightTeamIdx + 5] || "-",
+                set3: cells[rightTeamIdx + 6] || "-",
+                setD: cells[rightTeamIdx + 7] || "-",
+                points: cells[rightTeamIdx + 8] || "-"
+              });
+            }
+          }
+        }
+
+        if (standings.length === 0) {
+          statusEl.textContent = `No standings recorded for ${divisionName}.`;
+          return;
+        }
+
+        statusEl.style.display = 'none';
+        tableEl.style.display = 'table';
+
+        tbodyEl.innerHTML = standings.map((row, idx) => {
+          const isHighlight = row.team === 'BLANK' ;
+          const rowClass = isHighlight ? 'class="highlight-row"' : '';
+
+          return `
+            <tr ${rowClass}>
+              <td class="center">${idx + 1}</td>
+              <td class="team-name">${row.team}</td>
+              <td class="center">${row.games}</td>
+              <td class="center">${row.won}</td>
+              <td class="center">${row.drawn}</td>
+              <td class="center">${row.set1}</td>
+              <td class="center">${row.set2}</td>
+              <td class="center">${row.set3}</td>
+              <td class="center">${row.setD}</td>
+              <td class="center points-col">${row.points}</td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Error fetching standings:', err);
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = `Failed to load standings: ${err.message}`;
+      }
+    }
+
+    // 2. Load Fixtures via RPC
+    async function loadUpcomingFixtures(divisionName) {
+      const statusEl = document.getElementById('fixtures-status');
+      const tableEl = document.getElementById('fixtures-table');
+      const tbodyEl = document.getElementById('fixtures-body');
+
+      statusEl.style.display = 'block';
+      statusEl.className = 'status-msg';
+      statusEl.textContent = 'Loading upcoming fixtures...';
+      tableEl.style.display = 'none';
+
+      try {
+        let { data, error } = await supabase.rpc('get_fixtures_for_current_week', { div: divisionName });
+
+        if (error) {
+          const fallback = await supabase.rpc('get_fixtures_for_current_week');
+          if (fallback.error) throw error;
+          data = fallback.data;
+        }
+
+        if (!data || data.length === 0) {
+          statusEl.textContent = `No fixtures scheduled for ${divisionName} this week.`;
+          return;
+        }
+
+        const divisionFixtures = data.filter(row => {
+          const rowDiv = row.division || row.home_division || row.Division;
+          return !rowDiv || rowDiv === divisionName;
+        });
+
+        const listToRender = divisionFixtures.length > 0 ? divisionFixtures : data;
+
+        statusEl.style.display = 'none';
+        tableEl.style.display = 'table';
+
+        tbodyEl.innerHTML = listToRender.map(row => {
+          const rawDate = row.gamedate || row.game_date || row.match_date;
+          const dateObj = new Date(rawDate);
+          const formattedDate = isNaN(dateObj) ? rawDate : dateObj.toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short'
+          });
+
+          const home = row.home_team || row.home_team_name || '-';
+          const away = row.away_team || row.away_team_name || '-';
+          const venue = row.alley || row.venue || 'TBA';
+
+          return `
+            <tr>
+              <td>${formattedDate}</td>
+              <td class="team-name">${home}</td>
+              <td class="team-name">${away}</td>
+              <td>${venue}</td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Error fetching fixtures:', err);
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = `Failed to load fixtures: ${err.message}`;
+      }
+    }
+
+    // 3. Load Recent Results via RPC
+    async function loadRecentResults(divisionName) {
+      const statusEl = document.getElementById('results-status');
+      const tableEl = document.getElementById('results-table');
+      const tbodyEl = document.getElementById('results-body');
+
+      statusEl.style.display = 'block';
+      statusEl.className = 'status-msg';
+      statusEl.textContent = 'Loading recent results...';
+      tableEl.style.display = 'none';
+
+      try {
+        const { data, error } = await supabase.rpc('get_recent_results_by_division', {
+          div: divisionName
+        });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          statusEl.textContent = `No recent match results found for ${divisionName}.`;
+          return;
+        }
+
+        statusEl.style.display = 'none';
+        tableEl.style.display = 'table';
+
+        tbodyEl.innerHTML = data.map(row => {
+          const dateObj = new Date(row.game_date);
+          const formattedDate = isNaN(dateObj) ? row.game_date : dateObj.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short'
+          });
+
+          return `
+            <tr>
+              <td>${formattedDate}</td>
+              <td class="team-name">${row.home_team}</td>
+              <td class="team-name">${row.away_team}</td>
+              <td class="score-cell">${row.home_pins} - ${row.away_pins}</td>
+              <td><span class="badge">${row.front_set_winner || '-'}</span></td>
+              <td><span class="badge">${row.middle_set_winner || '-'}</span></td>
+              <td><span class="badge">${row.back_set_winner || '-'}</span></td>
+              <td><span class="badge badge-winner">${row.game_winner || '-'}</span></td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Error fetching RPC results:', err);
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = `Failed to load results: ${err.message}`;
+      }
+    }
+
+    // Master reload trigger
+    function loadDataForDivision(divName) {
+      loadStandings(divName);
+      loadUpcomingFixtures(divName);
+      loadRecentResults(divName);
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDataForDivision(divisionSelect.value);
+    });
+
+    divisionSelect.addEventListener('change', (e) => {
+      const selectedValue = e.target.value;
+      // Save selection to localStorage immediately
+      localStorage.setItem('selectedDivisionValue', selectedValue);
+      loadDataForDivision(selectedValue);
+    });
+  </script>
+
+
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tewkesbury & District Skittles League - Team Portal</title>
+  <!-- Main project stylesheet -->
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <div class="container">
+
+    <div id="nav-placeholder"></div>
+
+  <script>
+    // Fetch navigation from parent folder
+    fetch("TeamNav.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("nav-placeholder").innerHTML = html;
+        initNav();
+        initChangeTeamButton(); // <--- Hook up the button after nav loads
+      });
+
+    function initNav() {
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        if (link.getAttribute("href").toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+    }
+
+    function initChangeTeamButton() {
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            location.reload();
+          }
+        });
+      }
+    }
+  </script>
+
+    <!-- TOP NAVIGATION -->
+    <header class="top-nav">
+      <div class="brand-title" id="team-title-heading">My Team Portal</div>
+    </header>
+
+    <!-- SETUP SECTION (Shown only if no team is saved) -->
+    <section id="team-setup-section" class="section-card" style="display: none;">
+      <div class="section-header">
+        <h2>Welcome! Please Select Your Team</h2>
+      </div>
+      <p style="margin-bottom: 1.5rem; color: #666;">Choose your division first, then select your team from the list. This will be saved for your future visits.</p>
+      
+      <div class="controls-card" style="background: none; padding: 0; box-shadow: none;">
+        <div style="margin-bottom: 1rem;">
+          <label for="setup-division-select"><strong>1. Select Division:</strong></label>
+          <div class="select-wrapper" style="margin-top: 0.5rem;">
+            <select id="setup-division-select">
+              <option value="" disabled selected>-- Choose Division --</option>
+              <option value="Premier">Premier Division</option>
+              <option value="Division 1">Division 1</option>
+              <option value="Division 2">Division 2</option>
+              <option value="Division 3">Division 3</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label for="setup-team-select"><strong>2. Select Team:</strong></label>
+          <div class="select-wrapper" style="margin-top: 0.5rem;">
+            <select id="setup-team-select" disabled>
+              <option value="" disabled selected>-- Choose Division First --</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="save-team-btn" class="btn-admin" style="padding: 0.75rem 1.5rem; cursor: pointer;" disabled>Save My Team</button>
+      </div>
+    </section>
+
+    <!-- DASHBOARD CONTENT (Shown once a team is saved) -->
+    <div id="team-dashboard-content" style="display: none;">
+      
+
+
+      <!-- SECTION 1: NEXT FIXTURE -->
+      <section class="section-card">
+        <div class="section-header">
+          <h2>Next Fixture</h2>
+        </div>
+        <div id="next-fixture-status" class="status-msg">Loading next fixture...</div>
+        <div id="nextFixtureText" style="padding: 10px 0; font-size: 1.1rem; font-weight: 500;"></div>
+      </section>
+
+      <!-- SECTION 2: TOP SCORERS -->
+      <section class="section-card">
+        <div class="section-header">
+          <h2>Top 3 Scorers</h2>
+        </div>
+        <div id="top-scorer-status" class="status-msg" style="display: none;">Loading top scorers...</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th class="center">Score</th>
+                <th>Opposition</th>
+                <th>Alley</th>
+              </tr>
+            </thead>
+            <tbody id="topScorerBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 3: LEAGUE TABLE -->
+      <section class="section-card">
+        <div class="section-header">
+          <h2 id="division-table-heading">League Table</h2>
+        </div>
+        <div id="table-status" class="status-msg">Loading league table...</div>
+        <div class="table-wrapper">
+          <table id="division-table" style="display: none;">
+            <thead>
+              <tr>
+                <th class="center">Pos</th>
+                <th>Team</th>
+                <th class="center">Played</th>
+                <th class="center">Won</th>
+                <th class="center">Drawn</th>
+                <th class="center">Set 1</th>
+                <th class="center">Set 2</th>
+                <th class="center">Set 3</th>
+                <th class="center">Set D</th>
+                <th class="center points-col">Points</th>
+              </tr>
+            </thead>
+            <tbody id="divisionTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+
+<script type="module">
+  import { supabase } from "../supabase.js";
+  import { fetchDivisionTeamsMap } from "../teamService.js";
+
+  const season = "2026/27";
+
+  const setupSection = document.getElementById('team-setup-section');
+  const dashboardContent = document.getElementById('team-dashboard-content');
+  const setupDivisionSelect = document.getElementById('setup-division-select');
+  const setupTeamSelect = document.getElementById('setup-team-select');
+  const saveTeamBtn = document.getElementById('save-team-btn');
+  const changeTeamBtn = document.getElementById('change-team-btn');
+
+  let divisionTeamsMap = {};
+  let teamIdMap = {};
+
+  const formatDate = d => {
+    const date = new Date(d);
+    return isNaN(date) ? d : `${String(date.getDate()).padStart(2,"0")}/${String(date.getMonth()+1,"0")}/${date.getFullYear()}`;
+  };
+
+function normalizeTeamName(name) {
+  if (!name) return "";
+  return name
+    .replace(/[\r\n]+/g, " ")    // Replace newlines with a space
+    .replace(/\u00a0/g, " ")     // Replace non-breaking spaces (&nbsp;) with a regular space
+    .replace(/\s+/g, " ")        // Collapse multiple spaces into one
+    .trim();                     // Trim leading/trailing whitespace
+}
+
+
+async function init() {
+  // Fetch maps from the shared service
+  const serviceData = await fetchDivisionTeamsMap();
+  divisionTeamsMap = serviceData.divisionMap;
+  teamIdMap = serviceData.teamIdMap;
+
+  const savedTeam = localStorage.getItem('tmsl_saved_team');
+  const savedDivision = localStorage.getItem('tmsl_saved_division');
+  
+  // teamIdMap[savedTeam] now returns our object: { lookupId, teamId }
+  let teamObj = savedTeam ? teamIdMap[savedTeam] : null;
+
+  if (!savedTeam || !savedDivision || !teamObj) {
+    setupSection.style.display = 'block';
+    dashboardContent.style.display = 'none';
+    document.getElementById("team-title-heading").textContent = "My Team Portal - Setup Required";
+  } else {
+    setupSection.style.display = 'none';
+    dashboardContent.style.display = 'block';
+    document.getElementById("team-title-heading").textContent = `Tewekesbury Skittles League - ${savedTeam} - ${savedDivision}`;
+    
+    // Pass lookupId for the fixtures function
+    loadNextFixture(teamObj.lookupId);
+    
+    // Pass teamId for the top scorers function
+    loadTopScorers(teamObj.teamId);
+    
+    loadDivisionTable(savedDivision, savedTeam);
+  }
+}
+  init();
+
+  setupDivisionSelect.addEventListener('change', (e) => {
+    const selectedDiv = e.target.value;
+    const teams = divisionTeamsMap[selectedDiv] || [];
+
+    setupTeamSelect.innerHTML = '<option value="" disabled selected>-- Choose Team --</option>';
+    teams.forEach(team => {
+      const opt = document.createElement('option');
+      opt.value = team;
+      opt.textContent = team;
+      setupTeamSelect.appendChild(opt);
+    });
+
+    setupTeamSelect.disabled = false;
+    saveTeamBtn.disabled = true;
+  });
+
+  setupTeamSelect.addEventListener('change', () => {
+    saveTeamBtn.disabled = false;
+  });
+
+  saveTeamBtn.addEventListener('click', () => {
+    const div = setupDivisionSelect.value;
+    const team = setupTeamSelect.value;
+    
+    if (div && team) {
+      const teamId = teamIdMap[team]; // Grab ID straight from the map
+      localStorage.setItem('tmsl_saved_division', div);
+      localStorage.setItem('tmsl_saved_team', team);
+      if (teamId) {
+        localStorage.setItem('tmsl_saved_team_id', teamId);
+      }
+      location.reload();
+    }
+  });
+
+  changeTeamBtn.addEventListener('click', () => {
+    if (confirm("Do you want to change your saved team?")) {
+      localStorage.removeItem('tmsl_saved_team');
+      localStorage.removeItem('tmsl_saved_division');
+      localStorage.removeItem('tmsl_saved_team_id');
+      location.reload();
+    }
+  });
+
+  async function loadNextFixture(rowId) {
+    const el = document.getElementById("nextFixtureText");
+    const statusEl = document.getElementById("next-fixture-status");
+    
+    console.log("Calling tmsl_get_teams_next_fixture with row_id:", rowId);
+
+    if (!rowId) {
+      statusEl.textContent = "Team ID mapping not found.";
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("tmsl_get_teams_next_fixture", {
+        row_id: Number(rowId)
+      });
+
+      if (error) throw error;
+
+      console.log("Fixture RPC Response data:", data);
+
+      if (!data?.length) {
+        statusEl.textContent = "No upcoming fixtures found.";
+        el.style.display = 'none';
+        return;
+      }
+
+      statusEl.style.display = 'none';
+      el.style.display = 'block';
+      const fx = data[0];
+      el.textContent = `${formatDate(fx.game_date)} – ${fx.home_away} at ${fx.alley} vs ${fx.opposition}`;
+    } catch (err) {
+      console.error("Fixture error:", err);
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = "Error loading fixture.";
+    }
+  }
+
+  async function loadTopScorers(teamId) {
+    const tbody = document.getElementById("topScorerBody");
+    if (!teamId) {
+      tbody.innerHTML = `<tr><td colspan="4">Invalid team record</td></tr>`;
+      return;
+    }
+
+    const { data, error } = await supabase.rpc("tmsl_top3_scores_by_team", {
+      team_id: Number(teamId),
+      season: season
+    });
+
+    if (error || !data?.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #666;">No scores available yet</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.player_name}</td>
+        <td class="center">${r.highest_score}</td>
+        <td>${r.opponent_name}</td>
+        <td>${r.alley}</td>
+      </tr>
+    `).join("");
+  }
+
+ async function loadDivisionTable(divisionName, currentTeamName) {
+    const statusEl = document.getElementById("table-status");
+    const tableEl = document.getElementById("division-table");
+    const tbody = document.getElementById("divisionTableBody");
+    document.getElementById("division-table-heading").textContent = `${divisionName} League Table`;
+
+    try {
+      const html = await fetch("../tmsl-2021-2022.html").then(r => r.text());
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+
+      const rows = [...doc.querySelectorAll("tr")];
+      const divisionTeams = divisionTeamsMap[divisionName] || [];
+      const tableData = [];
+      const seenTeams = new Set();
+
+      for (const tr of rows) {
+        // Use normalizeTeamName to clear out Excel formatting junk
+        const cells = [...tr.querySelectorAll("td")].map(td => normalizeTeamName(td.textContent));
+        const teamIndex = cells.findIndex(c => divisionTeams.includes(c));
+        if (teamIndex === -1) continue;
+
+        const teamName = cells[teamIndex];
+
+        if (!seenTeams.has(teamName)) {
+          seenTeams.add(teamName);
+
+          tableData.push({
+            team: teamName,
+            played: cells[teamIndex + 1] || "",
+            won: cells[teamIndex + 2] || "",
+            drawn: cells[teamIndex + 3] || "",
+            Set1: cells[teamIndex + 4] || "",
+            Set2: cells[teamIndex + 5] || "",
+            Set3: cells[teamIndex + 6] || "",
+            SetD: cells[teamIndex + 7] || "",
+            points: cells[teamIndex + 8] || "",
+            highlight: teamName.toLowerCase() === normalizeTeamName(currentTeamName).toLowerCase(),
+            position: seenTeams.size,
+            promotion: seenTeams.size < 2
+          });
+        }
+      }
+      
+      if (tableData.length === 0) {
+        statusEl.textContent = "No table data found for this division.";
+        return;
+      }
+
+      // Render rows into the table body
+      tbody.innerHTML = tableData.map(row => `
+        <tr ${row.highlight ? 'style="font-weight: bold; background-color: #f0f8ff;"' : ''}>
+          <td class="center">${row.position}</td>
+          <td>${row.team}</td>
+          <td class="center">${row.played}</td>
+          <td class="center">${row.won}</td>
+          <td class="center">${row.drawn}</td>
+          <td class="center">${row.Set1}</td>
+          <td class="center">${row.Set2}</td>
+          <td class="center">${row.Set3}</td>
+          <td class="center">${row.SetD}</td>
+          <td class="center points-col">${row.points}</td>
+        </tr>
+      `).join("");
+
+      // Hide status message and display the table
+      statusEl.style.display = 'none';
+      tableEl.style.display = 'table';
+
+    } catch (err) {
+      console.error("Error loading division table:", err);
+      statusEl.textContent = "Error loading league table.";
+    }
+  }
+
+</script>
+
+<script>
+  fetch("TeamNav.html")
+    .then(r => r.text())
+    .then(html => {
+      // 1. Inject the HTML into the page
+      document.getElementById("nav-placeholder").innerHTML = html;
+
+      // 2. Populate the subtitle text immediately
+      const savedTeam = localStorage.getItem('tmsl_saved_team');
+      const savedDivision = localStorage.getItem('tmsl_saved_division');
+      const subtitleEl = document.getElementById("nav-team-subtitle");
+      if (subtitleEl && savedTeam && savedDivision) {
+        subtitleEl.textContent = `${savedTeam} - ${savedDivision}`;
+      }
+
+      // 3. Highlight the current active tab
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && href.toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+
+      // 4. Attach Change Team button listener
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!-- TOP HEADER & LOGOUT BAR -->
+<header class="top-header" style="background: var(--primary); border-radius: 10px; padding: 14px 20px; box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: space-between; color: #ffffff; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+  <div class="header-brand" style="font-size: 1.15rem; font-weight: 700;">Tewkesbury Skittles League – Admin Portal</div>
+  <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
+    <span class="user-badge" id="user-role-badge" style="font-size: 0.75rem; background-color: #334155; padding: 3px 8px; border-radius: 4px; color: #f8fafc; font-weight: 600; text-transform: uppercase;">Loading...</span>
+    <span class="user-email" id="user-email-display" style="font-size: 0.85rem; color: #94a3b8;"></span>
+    <a href="teamindex.html" class="btn-portal" style="background-color: #ffffff; color: var(--primary); font-weight: 600; font-size: 0.85rem; padding: 6px 14px; border-radius: 6px; text-decoration: none;">View Portal</a>
+    <button id="logout-btn" class="btn-logout" style="background-color: #ef4444; color: #ffffff; font-weight: 600; font-size: 0.85rem; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;">Log Out</button>
+  </div>
+</header>
+
+<!-- SITE ADMIN NAVIGATION BAR -->
+<nav id="site-admin-nav-bar" class="nav-bar site-admin-nav" style="background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 8px; padding: 10px 16px; display: none; align-items: center; gap: 12px; box-shadow: var(--shadow-md); flex-wrap: wrap; margin-bottom: 12px;">
+  <span class="nav-label" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px;">Site Admin:</span>
+  <a href="ManagePlayers.html" class="nav-link" style="background-color: var(--admin-color, #2563eb); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Manage Teams</a>
+  <a href="all-fixtures-status.html" class="nav-link" style="background-color: var(--admin-color, #2563eb); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Manage Results</a>
+  <a href="add-cup-fixture.html" class="nav-link" style="background-color: var(--admin-color, #2563eb); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Manage Cup Fixtures</a>
+  <a href="all-fixtures-status.html" class="nav-link" style="background-color: var(--admin-color, #2563eb); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Fixture Status</a>
+</nav>
+
+<!-- TEAM ADMIN NAVIGATION BAR -->
+<nav id="team-admin-nav-bar" class="nav-bar team-admin-nav" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 10px 16px; display: none; align-items: center; gap: 12px; box-shadow: var(--shadow-md); flex-wrap: wrap; margin-bottom: 20px;">
+  <span class="nav-label" style="font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px;">Team Admin:</span>
+  <a href="admin.html" class="nav-link" style="background-color: var(--team-color, #059669); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Team Home</a>
+  <a href="ManagePlayers.html" class="nav-link" style="background-color: var(--team-color, #059669); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Manage Team</a>
+  <a href="Upload.html" class="nav-link" style="background-color: var(--team-color, #059669); color: #ffffff; font-size: 0.85rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; text-decoration: none;">Add Results</a>
+</nav>

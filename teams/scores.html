@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Match Viewer</title>
+  <link rel="stylesheet" href="../style.css" />
+
+  <style>
+    .spare_cell { background-color: #d1fae5; font-weight: bold; }
+    .summary-badge { display: inline-block; padding: 4px 10px; background: #3b82f6; color: white; border-radius: 4px; font-size: 0.9rem; margin-left: 10px; }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <div id="nav-placeholder"></div>
+
+  <script>
+    fetch("TeamNav.html")
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("nav-placeholder").innerHTML = html;
+        initNav();
+        initChangeTeamButton();
+      });
+
+    function initNav() {
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        if (link.getAttribute("href").toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+    }
+
+    function initChangeTeamButton() {
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    }
+  </script>
+
+<script>
+  fetch("TeamNav.html")
+    .then(r => r.text())
+    .then(html => {
+      // 1. Inject the HTML into the page
+      document.getElementById("nav-placeholder").innerHTML = html;
+
+      // 2. Populate the subtitle text immediately
+      const savedTeam = localStorage.getItem('tmsl_saved_team');
+      const savedDivision = localStorage.getItem('tmsl_saved_division');
+      const subtitleEl = document.getElementById("nav-team-subtitle");
+      if (subtitleEl && savedTeam && savedDivision) {
+        subtitleEl.textContent = `${savedTeam} - ${savedDivision}`;
+      }
+
+      // 3. Highlight the current active tab
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && href.toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+
+      // 4. Attach Change Team button listener
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    });
+</script>
+
+
+  <header class="top-nav">
+    <div class="brand-title" id="pageTitle">Match Viewer</div>
+  </header>
+
+  <section class="section-card">
+    <div class="section-header">
+      <h2>Match Viewer</h2>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <label for="matchSelect"><strong>Select Match:</strong></label>
+      <div class="select-wrapper" style="margin-top: 0.5rem;">
+        <select id="matchSelect"></select>
+      </div>
+    </div>
+
+<div class="table-wrapper" style="width: 100%; overflow-x: auto;">
+  <table id="matchTable" style="width: 100%; table-layout: auto;">
+        <thead>
+          <tr>
+            <th colspan="10"><div id="HomeTeam">Home</div></th>
+            <th colspan="10"><div id="AwayTeam">Away</div></th>
+          </tr>
+          <tr id="tableSubHeader">
+            <th>Home Player</th>
+            <th colspan="8">Home Balls</th>
+            <th>Total</th>
+            <th>Away Player</th>
+            <th colspan="8">Away Balls</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="totals" style="margin-top: 2rem;"></div>
+  </section>
+</div>
+
+
+<script>
+  fetch("TeamNav.html")
+    .then(r => r.text())
+    .then(html => {
+      // 1. Inject the HTML into the page
+      document.getElementById("nav-placeholder").innerHTML = html;
+
+      // 2. Populate the subtitle text immediately
+      const savedTeam = localStorage.getItem('tmsl_saved_team');
+      const savedDivision = localStorage.getItem('tmsl_saved_division');
+      const subtitleEl = document.getElementById("nav-team-subtitle");
+      if (subtitleEl && savedTeam && savedDivision) {
+        subtitleEl.textContent = `${savedTeam} - ${savedDivision}`;
+      }
+
+      // 3. Highlight the current active tab
+      const page = window.location.pathname.split("/").pop().toLowerCase();
+      document.querySelectorAll(".gh-tabs a").forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && href.toLowerCase().includes(page)) {
+          link.classList.add("active");
+        }
+      });
+
+      // 4. Attach Change Team button listener
+      const changeTeamBtn = document.getElementById('change-team-btn');
+      if (changeTeamBtn) {
+        changeTeamBtn.addEventListener('click', () => {
+          if (confirm("Do you want to change your saved team?")) {
+            localStorage.removeItem('tmsl_saved_team');
+            localStorage.removeItem('tmsl_saved_division');
+            localStorage.removeItem('tmsl_saved_team_id');
+            window.location.href = 'teamindex.html';
+          }
+        });
+      }
+    });
+</script>
+
+<script type="module">
+  import { supabase } from "../supabase.js";
+
+  // Highlight spare balls (>9 pins in skittles)
+  function highlightCell(score) {
+    if (score === null || score === undefined) return `<td>-</td>`;
+    return score > 9
+      ? `<td class="spare_cell">${score}</td>`
+      : `<td>${score}</td>`;
+  }
+
+  // Convert "Wednesday 09-09-2026" → "2026-09-09"
+  function normaliseDate(str) {
+    if (!str) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+    const dmyMatch = str.match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (dmyMatch) {
+      let [, dd, mm, yyyy] = dmyMatch;
+      if (dd.length === 1) dd = "0" + dd;
+      if (mm.length === 1) mm = "0" + mm;
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return str;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  let teamName = localStorage.getItem('tmsl_saved_team') || params.get("team");
+
+  if (!teamName) {
+    const firstKey = [...params.keys()][0];
+    if (firstKey && firstKey.toLowerCase() !== "team") {
+      teamName = firstKey;
+    }
+  }
+
+  teamName = teamName || "Sharks";
+  document.getElementById("pageTitle").innerText = `${teamName} – Match Viewer`;
+
+  async function loadMatches() {
+    const { data: fixtures, error: fxErr } = await supabase.rpc(
+      "tmsl_get_allfixtures",
+      { team: teamName }
+    );
+
+    if (fxErr) {
+      console.error("Error fetching fixtures:", fxErr);
+      return;
+    }
+
+    const matchSelect = document.getElementById("matchSelect");
+    matchSelect.innerHTML = "";
+
+    const today = new Date();
+    const playedMatches = (fixtures || []).filter(fx => {
+      const fixedDate = normaliseDate(fx.game_date);
+      return new Date(fixedDate) <= today;
+    });
+
+    playedMatches.sort((a, b) => {
+      return new Date(normaliseDate(b.game_date)) - new Date(normaliseDate(a.game_date));
+    });
+
+    playedMatches.forEach(fx => {
+      const fixedDate = normaliseDate(fx.game_date);
+      const opt = document.createElement("option");
+      opt.value = fixedDate;
+      opt.textContent = `${fx.game_date} – ${fx.home_away} vs ${fx.opposition}`;
+      matchSelect.appendChild(opt);
+    });
+
+    const targetDate = params.get("date");
+    if (matchSelect.options.length > 0) {
+      let selectedValue = matchSelect.options[0].value;
+
+      if (targetDate) {
+        const cleanTargetDate = normaliseDate(targetDate);
+        const matchingOpt = [...matchSelect.options].find(opt => {
+          return opt.value === cleanTargetDate || normaliseDate(opt.textContent) === cleanTargetDate;
+        });
+        if (matchingOpt) selectedValue = matchingOpt.value;
+      }
+
+      matchSelect.value = selectedValue;
+      loadMatchTable(selectedValue);
+    } else {
+      document.querySelector("#matchTable tbody").innerHTML = `<tr><td colspan="20">No played matches found.</td></tr>`;
+    }
+
+    matchSelect.addEventListener("change", () => {
+      loadMatchTable(matchSelect.value);
+    });
+  }
+
+  async function loadMatchTable(selectedDate) {
+    const { data: rows, error } = await supabase.rpc(
+      "tmsl_get_match_scores_with_summary",
+      { team_namein: teamName, game_date: selectedDate }
+    );
+
+    if (error) {
+      console.error("RPC Error:", error);
+      return;
+    }
+
+    const tbody = document.querySelector("#matchTable tbody");
+    const subHeader = document.getElementById("tableSubHeader");
+    const totalsDiv = document.getElementById("totals");
+    tbody.innerHTML = "";
+    totalsDiv.innerHTML = "";
+
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="20">No score records recorded for this match yet.</td></tr>`;
+      document.getElementById("HomeTeam").innerText = "Home";
+      document.getElementById("AwayTeam").innerText = "Away";
+      return;
+    }
+
+    const homeTeamName = rows[0].home_team_name || "Home Team";
+    const awayTeamName = rows[0].away_team_name || "Away Team";
+    document.getElementById("HomeTeam").innerText = homeTeamName;
+    document.getElementById("AwayTeam").innerText = awayTeamName;
+
+    const isSummaryOnly = rows[0].homeball1 === null;
+
+    let frontHome = 0, frontAway = 0;
+    let middleHome = 0, middleAway = 0;
+    let backHome = 0, backAway = 0;
+
+    if (isSummaryOnly) {
+      subHeader.innerHTML = `
+        <th colspan="5">Home Player</th>
+        <th colspan="5">Home Score</th>
+        <th colspan="5">Away Player</th>
+        <th colspan="5">Away Score</th>
+      `;
+
+      rows.forEach(row => {
+        const hTotal = row.home_total || 0;
+        const aTotal = row.away_total || 0;
+
+        const handName = row.hand || "Leg";
+        if (handName.toLowerCase().includes("front")) { frontHome += hTotal; frontAway += aTotal; }
+        else if (handName.toLowerCase().includes("middle")) { middleHome += hTotal; middleAway += aTotal; }
+        else if (handName.toLowerCase().includes("back")) { backHome += hTotal; backAway += aTotal; }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td colspan="5">${row.home_player || ''}</td>
+          <td colspan="5">${hTotal}</td>
+          <td colspan="5">${row.away_player || ''}</td>
+          <td colspan="5">${aTotal}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+    } else {
+      subHeader.innerHTML = `
+        <th>Home Player</th>
+        <th colspan="8">Home Balls</th>
+        <th>Total</th>
+        <th>Away Player</th>
+        <th colspan="8">Away Balls</th>
+        <th>Total</th>
+      `;
+
+      rows.forEach(row => {
+        const homeBalls = [
+          row.homeball1, row.homeball2, row.homeball3, row.homeball4,
+          row.homeball5, row.homeball6, row.homeball7, row.homeball8
+        ];
+
+        const awayBalls = [
+          row.awayball1, row.awayball2, row.awayball3, row.awayball4,
+          row.awayball5, row.awayball6, row.awayball7, row.awayball8
+        ];
+
+        const homeTotal = row.home_total ?? homeBalls.reduce((a, b) => a + (b || 0), 0);
+        const awayTotal = row.away_total ?? awayBalls.reduce((a, b) => a + (b || 0), 0);
+
+        const handName = row.hand || "";
+        if (handName.toLowerCase().includes("front")) { frontHome += homeTotal; frontAway += awayTotal; }
+        else if (handName.toLowerCase().includes("middle")) { middleHome += homeTotal; middleAway += awayTotal; }
+        else if (handName.toLowerCase().includes("back")) { backHome += homeTotal; backAway += awayTotal; }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.home_player || ''}</td>
+          ${homeBalls.map(b => highlightCell(b)).join("")}
+          <td><strong>${homeTotal}</strong></td>
+          <td>${row.away_player || ''}</td>
+          ${awayBalls.map(b => highlightCell(b)).join("")}
+          <td><strong>${awayTotal}</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const matchHome = frontHome + middleHome + backHome;
+    const matchAway = frontAway + middleAway + backAway;
+
+    let homePoints = 0;
+    let awayPoints = 0;
+
+    if (frontHome > frontAway) homePoints += 2;
+    else if (frontAway === frontHome) { homePoints += 1; awayPoints += 1; }
+    else if (frontAway > frontHome) awayPoints += 2;
+
+    if (middleHome > middleAway) homePoints += 2;
+    else if (middleAway === middleHome) { homePoints += 1; awayPoints += 1; }
+    else if (middleAway > middleHome) awayPoints += 2;
+
+    if (backHome > backAway) homePoints += 2;
+    else if (backAway === backHome) { homePoints += 1; awayPoints += 1; }
+    else if (backAway > backHome) awayPoints += 2;
+
+    if (matchHome > matchAway) homePoints += 4;
+    else if (matchHome === matchAway) { homePoints += 2; awayPoints += 2; }
+    else if (matchAway > matchHome) awayPoints += 4;
+
+    totalsDiv.innerHTML = `
+      <h3>Hand Totals</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Hand</th><th>${homeTeamName}</th><th>${awayTeamName}</th></tr></thead>
+          <tbody>
+            <tr><td>Front</td><td class="center">${frontHome}</td><td class="center">${frontAway}</td></tr>
+            <tr><td>Middle</td><td class="center">${middleHome}</td><td class="center">${middleAway}</td></tr>
+            <tr><td>Back</td><td class="center">${backHome}</td><td class="center">${backAway}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top: 1.5rem;">Match Total</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>${homeTeamName}</th><th>${awayTeamName}</th></tr></thead>
+          <tbody>
+            <tr><td class="center"><strong>${matchHome}</strong></td><td class="center"><strong>${matchAway}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top: 1.5rem;">Points Awarded</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Team</th><th>Points</th></tr></thead>
+          <tbody>
+            <tr><td>${homeTeamName}</td><td class="center"><strong>${homePoints}</strong></td></tr>
+            <tr><td>${awayTeamName}</td><td class="center"><strong>${awayPoints}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  loadMatches();
+</script>
+
+</body>
+</html>
