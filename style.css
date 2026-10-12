@@ -2,7 +2,6 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  /* Adds a subtle shadow hint that content can be scrolled */
   background: linear-gradient(90deg, white 30%, rgba(255,255,255,0)), 
               linear-gradient(270deg, white 30%, rgba(255,255,255,0)) 100% 0;
   background-repeat: no-repeat;
@@ -12,7 +11,7 @@
 
 /* 1. Allow container to use more screen real estate on desktop */
 .container {
-  max-width: 1280px; /* Expands container width (default was usually ~960px or 1000px) */
+  max-width: 1280px; 
   margin: 0 auto;
   padding: 1rem;
 }
@@ -20,15 +19,15 @@
 /* 2. Compact table cells specifically for MatchViewer tables */
 #matchTable th, 
 #matchTable td {
-  padding: 4px 2px;       /* Reduces side padding so 20 columns fit easily */
-  font-size: 0.9rem;      /* Slightly tighter font for crisp layout */
-  min-width: 24px;        /* Ensures ball numbers stay centered and uniform */
+  padding: 4px 2px;       
+  font-size: 0.9rem;      
+  min-width: 5%;        
 }
 
-/* 3. Keep player name columns legible while ball columns compress */
+/* 3. Keep player name columns legible */
 #matchTable td:first-child,
 #matchTable td:nth-child(11) {
-  min-width: 120px;
+  width: 15%;
   text-align: left;
   padding-left: 8px;
 }
@@ -40,7 +39,7 @@ html, body {
 
 /* --- Global table behaviour --- */
 table {
-  width: auto;                 /* auto-size instead of full width */
+  width: 100%;                 
   border-collapse: collapse;
 }
 
@@ -133,9 +132,9 @@ input, textarea, select {
   margin: 8px 0 0;
 }
 
-/* --- League Table --- */
+/* --- League Table (Using Percentages) --- */
 #leagueTable table {
-  width: auto;                 
+  width: 100%;                 
   border-collapse: collapse;
   margin: 0;                   
 }
@@ -143,35 +142,31 @@ input, textarea, select {
 #leagueTable th,
 #leagueTable td {
   padding: 8px;                
-  text-align: left;            
+  text-align: center;          
   font-size: 0.85rem;          
 }
 
 #leagueTable th:nth-child(1),
 #leagueTable td:nth-child(1) {
-  width: 80px;
+  width: 8%; /* Position */
 }
 
 #leagueTable th:nth-child(2),
 #leagueTable td:nth-child(2) {
-  width: 60px;
+  width: 28%; /* Team Name gets more room */
+  text-align: left;
+  padding-left: 8px;
 }
 
-#leagueTable th:nth-child(3),
-#leagueTable td:nth-child(3),
-#leagueTable th:nth-child(4),
-#leagueTable td:nth-child(4),
-#leagueTable th:nth-child(5),
-#leagueTable td:nth-child(5),
-#leagueTable th:nth-child(6),
-#leagueTable td:nth-child(6),
-#leagueTable th:nth-child(7),
-#leagueTable td:nth-child(7) {
-  width: 50px;
+/* Stats columns share the remaining space proportionally */
+#leagueTable th:nth-child(n+3),
+#leagueTable td:nth-child(n+3) {
+  width: 8%;
 }
 
+/* --- Division 3 Table (Using Percentages) --- */
 #division3 table {
-  width: auto;
+  width: 100%;
   border-collapse: collapse;
 }
 
@@ -183,17 +178,19 @@ input, textarea, select {
 }
 
 #division3 th:nth-child(1),
-#division3 td:nth-child(1) { width: 140px; }
+#division3 td:nth-child(1) { 
+  width: 10%; 
+  text-align: center;
+}
 
 #division3 th:nth-child(2),
-#division3 td:nth-child(2),
-#division3 th:nth-child(3),
-#division3 td:nth-child(3),
-#division3 th:nth-child(4),
-#division3 td:nth-child(4),
-#division3 th:nth-child(5),
-#division3 td:nth-child(5) {
-  width: 60px;
+#division3 td:nth-child(2) { 
+  width: 40%; 
+}
+
+#division3 th:nth-child(n+3),
+#division3 td:nth-child(n+3) {
+  width: 10%;
 }
 
 .highlight-sharks {
@@ -210,17 +207,6 @@ input, textarea, select {
 .spare_cell {
   background-color: #c8f7c5; 
   font-weight: bold;
-}
-
-#division3 table td:nth-child(1),
-#division3 table th:nth-child(1) {
-  width: 40px;
-  text-align: center;
-}
-
-#division3 table td:nth-child(2),
-#division3 table th:nth-child(2) {
-  width: 180px;
 }
 
 /* --- Root variables and layout --- */
@@ -347,18 +333,6 @@ body {
   font-size: 1.25rem;
   font-weight: 600;
   color: #ffffff;
-}
-
-.table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
- /* white-space: nowrap; */
 }
 
 th {
