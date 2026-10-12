@@ -1,3 +1,15 @@
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  /* Adds a subtle shadow hint that content can be scrolled */
+  background: linear-gradient(90deg, white 30%, rgba(255,255,255,0)), 
+              linear-gradient(270deg, white 30%, rgba(255,255,255,0)) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 20px 100%;
+  background-attachment: local, scroll;
+}
+
 /* 1. Allow container to use more screen real estate on desktop */
 .container {
   max-width: 1280px; /* Expands container width (default was usually ~960px or 1000px) */
