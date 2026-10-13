@@ -59,6 +59,36 @@
     #matchTable td:nth-child(10) {
       border-right: 3px solid #cbd5e1;
     }
+
+    /* Mobile Toggle Container (hidden by default on desktop) */
+    .mobile-hands-toggle {
+      display: none;
+      margin-bottom: 1rem;
+      background: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    /* Responsive Mobile Styles */
+    @media (max-width: 768px) {
+      .mobile-hands-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      /* Only hide individual hand score cells and headers by default on mobile unless toggled */
+      #matchTable:not(.show-hands-mobile) td:nth-child(n+2):nth-child(-n+9),
+      #matchTable:not(.show-hands-mobile) td:nth-child(n+12):nth-child(-n+19) {
+        display: none;
+      }
+
+      #matchTable:not(.show-hands-mobile) .hands-header-col {
+        display: none;
+      }
+    }
   </style>
 </head>
 
@@ -120,19 +150,25 @@
       </div>
     </div>
 
+    <!-- Mobile Hands Toggle Checkbox -->
+    <div class="mobile-hands-toggle">
+      <input type="checkbox" id="toggleHands" style="width: 18px; height: 18px; cursor: pointer;" />
+      <label for="toggleHands" style="cursor: pointer; font-weight: 500;">Show Hands Breakdown</label>
+    </div>
+
     <div class="table-wrapper" style="width: 100%; overflow-x: auto;">
       <table id="matchTable" style="width: 100%; table-layout: auto;">
         <thead>
           <tr>
-            <th colspan="10"><div id="HomeTeam">Home</div></th>
-            <th colspan="10"><div id="AwayTeam">Away</div></th>
+            <th id="homeTeamTh" colspan="10"><div id="HomeTeam">Home</div></th>
+            <th id="awayTeamTh" colspan="10"><div id="AwayTeam">Away</div></th>
           </tr>
           <tr id="tableSubHeader">
             <th>HOME PLAYER</th>
-            <th colspan="8">HOME HANDS</th>
+            <th colspan="8" class="hands-header-col">HOME HANDS</th>
             <th>TOTAL</th>
             <th>AWAY PLAYER</th>
-            <th colspan="8">AWAY HANDS</th>
+            <th colspan="8" class="hands-header-col">AWAY HANDS</th>
             <th>TOTAL</th>
           </tr>
         </thead>
@@ -147,8 +183,34 @@
 <script type="module">
   import { supabase } from "../supabase.js";
 
-  // Store fixture details globally so we can look up match details per date
   let fixtureMap = {};
+  const toggleHandsCheckbox = document.getElementById('toggleHands');
+  const matchTableEl = document.getElementById('matchTable');
+
+  // Helper to adjust top team header colspans dynamically based on screen and toggle state
+  function updateColspans() {
+    const isMobile = window.innerWidth <= 768;
+    const showHands = matchTableEl.classList.contains('show-hands-mobile');
+    const spanValue = (isMobile && !showHands) ? 2 : 10;
+
+    const homeTh = document.getElementById('homeTeamTh');
+    const awayTh = document.getElementById('awayTeamTh');
+    if (homeTh) homeTh.colSpan = spanValue;
+    if (awayTh) awayTh.colSpan = spanValue;
+  }
+
+  if (toggleHandsCheckbox) {
+    toggleHandsCheckbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        matchTableEl.classList.add('show-hands-mobile');
+      } else {
+        matchTableEl.classList.remove('show-hands-mobile');
+      }
+      updateColspans();
+    });
+  }
+
+  window.addEventListener('resize', updateColspans);
 
   // Highlight spare balls (>9 pins in skittles)
   function highlightCell(score) {
@@ -180,7 +242,7 @@
     
     if (compStr.toLowerCase().includes("charity")) return "Charity Cup";
     if (compStr.toLowerCase().includes("president")) return "Presidents Cup";
-    if (compStr.toLowerCase().includes("cup")) return compStr; // Custom cup name
+    if (compStr.toLowerCase().includes("cup")) return compStr;
     
     return "League";
   }
@@ -273,9 +335,7 @@
       }
     }
 
-    // Update Header Badge (League, Charity Cup, Presidents Cup)
     const compName = getCompetitionName(fx).replace('_', ' ');
-    
     const compBadge = document.getElementById("compBadge");
     compBadge.innerText = compName;
     if (compName.toLowerCase().includes("cup")) {
@@ -287,7 +347,6 @@
     document.getElementById("HomeTeam").innerText = homeTeamName;
     document.getElementById("AwayTeam").innerText = awayTeamName;
 
-    // Fetch match scores
     const { data: rows, error } = await supabase.rpc(
       "tmsl_get_match_scores_with_summary",
       { team_namein: teamName, game_date: selectedDate }
@@ -306,6 +365,7 @@
 
     if (!rows || rows.length === 0) {
       tbody.innerHTML = `<tr><td colspan="20">No score records recorded for this match yet.</td></tr>`;
+      updateColspans();
       return;
     }
       
@@ -345,10 +405,10 @@
     } else {
       subHeader.innerHTML = `
         <th>HOME PLAYER</th>
-        <th colspan="8">HOME HANDS</th>
+        <th colspan="8" class="hands-header-col">HOME HANDS</th>
         <th>TOTAL</th>
         <th>AWAY PLAYER</th>
-        <th colspan="8">AWAY HANDS</th>
+        <th colspan="8" class="hands-header-col">AWAY HANDS</th>
         <th>TOTAL</th>
       `;
 
@@ -466,6 +526,9 @@
 
       ${bottomSectionHTML}
     `;
+
+    // Recalculate colspan matching on render
+    updateColspans();
   }
 
   loadMatches();
