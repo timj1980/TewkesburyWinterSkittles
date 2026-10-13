@@ -13,6 +13,52 @@
     .league-badge { background: #10b981; } /* Green for league games */
     .center { text-align: center; }
     .winner-box { background: #ecfdf5; border: 2px solid #10b981; color: #065f46; padding: 1rem; border-radius: 8px; font-size: 1.15rem; text-align: center; font-weight: bold; margin-top: 1rem; }
+
+    /* Custom Table Styling for Alignment & Vertical Lines */
+    #matchTable {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    #matchTable th, #matchTable td {
+      border: 1px solid #e5e7eb; /* Grid lines going down and across */
+      padding: 8px 6px;
+      vertical-align: middle;
+    }
+
+    /* Center headers */
+    #matchTable th {
+      text-align: center;
+      background-color: #f8fafc;
+    }
+
+    /* Left-align player names */
+    #matchTable td:nth-child(1),
+    #matchTable td:nth-child(11) {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    /* Right-align individual hand scores so numbers line up neatly beneath headers */
+    #matchTable td:nth-child(n+2):nth-child(-n+9),
+    #matchTable td:nth-child(n+12):nth-child(-n+19) {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Center total columns */
+    #matchTable td:nth-child(10),
+    #matchTable td:nth-child(20) {
+      text-align: center;
+      font-weight: bold;
+      background-color: #f8fafc;
+    }
+
+    /* Strong vertical dividing line separating Home & Away sides */
+    #matchTable th:nth-child(10),
+    #matchTable td:nth-child(10) {
+      border-right: 3px solid #cbd5e1;
+    }
   </style>
 </head>
 
@@ -82,12 +128,12 @@
             <th colspan="10"><div id="AwayTeam">Away</div></th>
           </tr>
           <tr id="tableSubHeader">
-            <th>Home Player</th>
-            <th colspan="8">Home Balls</th>
-            <th>Total</th>
-            <th>Away Player</th>
-            <th colspan="8">Away Balls</th>
-            <th>Total</th>
+            <th>HOME PLAYER</th>
+            <th colspan="8">HOME HANDS</th>
+            <th>TOTAL</th>
+            <th>AWAY PLAYER</th>
+            <th colspan="8">AWAY HANDS</th>
+            <th>TOTAL</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -271,10 +317,10 @@
 
     if (isSummaryOnly) {
       subHeader.innerHTML = `
-        <th colspan="5">Home Player</th>
-        <th colspan="5">Home Score</th>
-        <th colspan="5">Away Player</th>
-        <th colspan="5">Away Score</th>
+        <th colspan="5">HOME PLAYER</th>
+        <th colspan="5">HOME SCORE</th>
+        <th colspan="5">AWAY PLAYER</th>
+        <th colspan="5">AWAY SCORE</th>
       `;
 
       rows.forEach(row => {
@@ -289,21 +335,21 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td colspan="5">${row.home_player || ''}</td>
-          <td colspan="5">${hTotal}</td>
+          <td colspan="5" style="text-align: right;">${hTotal}</td>
           <td colspan="5">${row.away_player || ''}</td>
-          <td colspan="5">${aTotal}</td>
+          <td colspan="5" style="text-align: right;">${aTotal}</td>
         `;
         tbody.appendChild(tr);
       });
 
     } else {
       subHeader.innerHTML = `
-        <th>Home Player</th>
-        <th colspan="8">Home Balls</th>
-        <th>Total</th>
-        <th>Away Player</th>
-        <th colspan="8">Away Balls</th>
-        <th>Total</th>
+        <th>HOME PLAYER</th>
+        <th colspan="8">HOME HANDS</th>
+        <th>TOTAL</th>
+        <th>AWAY PLAYER</th>
+        <th colspan="8">AWAY HANDS</th>
+        <th>TOTAL</th>
       `;
 
       rows.forEach(row => {
@@ -346,7 +392,6 @@
     let bottomSectionHTML = "";
 
     if (isCupGame) {
-      // Cup Logic: Winning team progresses to next round
       let winnerText = "";
       if (matchHome > matchAway) {
         winnerText = `🏆 ${homeTeamName} through to next round`;
@@ -363,7 +408,6 @@
         </div>
       `;
     } else {
-      // League Logic: Calculate 10-point system (2 pts per hand + 4 pts for total pins)
       let homePoints = 0;
       let awayPoints = 0;
 
@@ -401,11 +445,11 @@
       <h3>Set Totals</h3>
       <div class="table-wrapper">
         <table>
-          <thead><tr><th>Hand</th><th>${homeTeamName}</th><th>${awayTeamName}</th></tr></thead>
+          <thead><tr><th>Set</th><th>${homeTeamName}</th><th>${awayTeamName}</th></tr></thead>
           <tbody>
-            <tr><td>Set 1</td><td class="center">${frontHome}</td><td class="center">${frontAway}</td></tr>
-            <tr><td>Set 2</td><td class="center">${middleHome}</td><td class="center">${middleAway}</td></tr>
-            <tr><td>Set 3</td><td class="center">${backHome}</td><td class="center">${backAway}</td></tr>
+            <tr><td class="center">Set 1</td><td class="center">${frontHome}</td><td class="center">${frontAway}</td></tr>
+            <tr><td class="center">Set 2</td><td class="center">${middleHome}</td><td class="center">${middleAway}</td></tr>
+            <tr><td class="center">Set 3</td><td class="center">${backHome}</td><td class="center">${backAway}</td></tr>
           </tbody>
         </table>
       </div>
