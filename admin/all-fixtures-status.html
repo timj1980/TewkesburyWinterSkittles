@@ -433,13 +433,13 @@
         let targetUrl = "";
 
         if (r.rowClass === "status-has-scores") {
-          targetUrl = `MatchViewer.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
+          targetUrl = `Scores.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
           actionHtml = `<span class="action-link">View Scoresheet ↗</span>`;
         } else if (r.rowClass === "status-result-summary") {
-          targetUrl = `MatchViewer.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
+          targetUrl = `Scores.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
           actionHtml = `<span class="action-link">Results Summary ↗</span>`;
         } else if (r.rowClass === "status-missing-scores") {
-          targetUrl = `Upload.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
+          targetUrl = `upload.html?team=${encodeURIComponent(r.team)}&date=${encodeURIComponent(r.isoDate)}`;
           actionHtml = `<span class="action-link">Add Scores ↗</span>`;
         }
 
